@@ -10,8 +10,8 @@
 #include "LIB/nesdoug.h"
 
 #define BLACK 0x0f
-#define DK_GY 0x1b
-#define LT_GY 0x3a
+#define DK_GY 0x0b
+#define LT_GY 0x29
 #define WHITE 0x30
 // there's some oddities in the palette code, black must be 0x0f, white must be 0x30
 
