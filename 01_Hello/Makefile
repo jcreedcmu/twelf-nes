@@ -32,3 +32,7 @@ $(NAME).s: $(NAME).c
 
 clean:
 	rm $(NAME).nes
+
+Alpha.chr: Alpha.png
+	convert Alpha.png -compress none /tmp/Alpha.pgm
+	node ../scripts/img2chr.js /tmp/Alpha.pgm Alpha.chr
