@@ -44,21 +44,14 @@ unsigned char *textmem = (unsigned char *)0x400;
 
 void main(void) {
   unsigned char i;
-  signed char j;
-
-  cputc('a');
-  cputc('b');
-  cputc('c');
 
   display_string();
-  i = cgetc();
-  cputc(i);
-  cgetc();
 
-  for (j = 0; j < 10; j++) {
-	 cputc('z');
+  while (1) {
+	 i = cgetc();
+	 if (i == ' ') break;
+	 cputc(i);
   }
-  cgetc();
   /* cputc('A'); */
   /* cputc('\n'); */
   /* cputc('B'); */
