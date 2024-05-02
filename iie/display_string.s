@@ -14,6 +14,7 @@ msg:
 
 .proc	_display_string: near
 
+	sei     							  ; I don't know why serial receive is producing interrupts?
 	lda     #<(msg)
 	ldx     #>(msg)
 	jsr     _cputs

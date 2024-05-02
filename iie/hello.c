@@ -41,7 +41,8 @@ void main(void) {
 	 }
 	 else if (i == 'E') {
 		cputs("read/write register: ");
-		cputhex8(PEEK(0xC0A8));
+		i = PEEK(0xC0A8);
+		cputhex8(i);
 		cputs("\r\n");
 	 }
 	 else if (i == 'S') {
