@@ -6,5 +6,5 @@ hello.dsk: hello.bin
 	java -jar $(AC) -p hello.dsk hello.system sys < $(TARGET)/apple2/util/loader.system
 	java -jar $(AC) -as hello.dsk hello bin < hello.bin
 
-hello.bin: hello.c
-	cl65 -t apple2 display_string.s hello.c -o hello.bin
+hello.bin: hello.c display_string.s
+	cl65 -t apple2enh display_string.s hello.c -o hello.bin

@@ -1,3 +1,4 @@
+#include <apple2enh.h>
 #include <conio.h>
 
 #define PEEK(addr) (*((unsigned char *)addr))
@@ -37,9 +38,20 @@ void echo_from_serial() {
 }
 
 void display_string(void);
+void write(unsigned char c);
+
+unsigned char *textmem = (unsigned char *)0x400;
 
 void main(void) {
+  unsigned char i;
+
+  for (i = 0; i < 10; i++) {
+	 cputc('x');
+  }
   display_string();
+  i = cgetc();
+  cputc(i);
+  cgetc();
   /* cputc('A'); */
   /* cputc('\n'); */
   /* cputc('B'); */
