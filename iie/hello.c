@@ -44,13 +44,20 @@ unsigned char *textmem = (unsigned char *)0x400;
 
 void main(void) {
   unsigned char i;
+  signed char j;
 
-  for (i = 0; i < 10; i++) {
-	 cputc('x');
-  }
+  cputc('a');
+  cputc('b');
+  cputc('c');
+
   display_string();
   i = cgetc();
   cputc(i);
+  cgetc();
+
+  for (j = 0; j < 10; j++) {
+	 cputc('z');
+  }
   cgetc();
   /* cputc('A'); */
   /* cputc('\n'); */
