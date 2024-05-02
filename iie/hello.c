@@ -23,20 +23,6 @@ void init_serial() {
   POKE(0xC0AB, 0x9E);
 }
 
-void echo_from_serial() {
-  unsigned char readCh;
-
-  while (1) {
-	 // while receive register empty
-	 while ((PEEK(0xC0A9) & 8) == 0) {
-		;		// idle
-	 }
-
-	 readCh = PEEK(0xC0A8); // read from SSC read register
-	 cputc(readCh);
-  }
-}
-
 void display_string(void);
 void write(unsigned char c);
 
@@ -49,8 +35,22 @@ void main(void) {
 
   while (1) {
 	 i = cgetc();
-	 if (i == ' ') break;
-	 cputc(i);
+	 if (i == 'I') {
+		init_serial();
+		cputs("ok.\r\n");
+	 }
+	 else if (i == 'E') {
+		cputs("read/write register: ");
+		cputhex8(PEEK(0xC0A8));
+		cputs("\r\n");
+	 }
+	 else if (i == 'S') {
+		cputs("status byte: ");
+		cputhex8(PEEK(0xC0A9));
+		cputs("\r\n");
+	 }
+	 else
+		cputc(i);
   }
   /* cputc('A'); */
   /* cputc('\n'); */
