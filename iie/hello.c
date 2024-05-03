@@ -18,15 +18,10 @@ void enter_hires_mode() {
   POKE(0x2081, 0xff);
 }
 
-void init_serial() {
-  POKE(0xC0AA, 0x0B);
-  POKE(0xC0AB, 0x9E);
-}
-
+// implemented in asm
+void init_serial(void);
 void display_string(void);
-void write(unsigned char c);
-
-unsigned char *textmem = (unsigned char *)0x400;
+void print_serial(void);
 
 void main(void) {
   unsigned char i;
@@ -37,9 +32,9 @@ void main(void) {
 	 i = cgetc();
 	 if (i == 'I') {
 		init_serial();
-		cputs("ok.\r\n");
+		cputs("Ok, initialized serial.\r\n");
 	 }
-	 else if (i == 'E') {
+	 else if (i == 'R') {
 		cputs("read/write register: ");
 		i = PEEK(0xC0A8);
 		cputhex8(i);
@@ -50,12 +45,10 @@ void main(void) {
 		cputhex8(PEEK(0xC0A9));
 		cputs("\r\n");
 	 }
+	 else if (i == 'P') {
+		print_serial();
+	 }
 	 else
 		cputc(i);
   }
-  /* cputc('A'); */
-  /* cputc('\n'); */
-  /* cputc('B'); */
-  /* init_serial(); */
-  /* echo_from_serial(); */
 }

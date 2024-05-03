@@ -1,0 +1,11 @@
+=== 2024.05.03 META: (:id d15e1862-f1de-466f-8bd9-eef44b056ada)
+
+What I want is to have a loop where the apple ii is listening to the serial port,
+waiting for triples of bytes that look like
+
+[byte] HI ADDR
+[byte] LO ADDR
+[byte] VALUE
+
+and then it writes VALUE to ADDR. I want to ACK each byte back to the
+sender so it doesn't send faster than we can receive.

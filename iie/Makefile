@@ -8,3 +8,9 @@ hello.dsk: hello.bin
 
 hello.bin: hello.c display_string.s
 	cl65 -t apple2enh display_string.s hello.c -o hello.bin
+
+adt:
+	sh ~/pgit/adtpro/ADTPro-2.1.0/adtpro.sh
+
+stty:
+	stty -F /dev/ttyUSB0 9600 cs8 cstopb -parenb -icanon istrip -ctlecho
