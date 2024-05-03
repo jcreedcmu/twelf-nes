@@ -56,6 +56,10 @@ void main(void) {
 	 else if (i == 'L') {
 		read_cmd_loop();
 	 }
+	 else if (i == 'D') {
+		cputs("debugging byte: ");
+		cputhex8(PEEK(0x0070));
+	 }
 	 else
 		cputc(i);
   }
