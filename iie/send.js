@@ -36,14 +36,17 @@ async function send_acked_byte(bb) {
   console.log('got byte', b);
 }
 
-async function go() {
-  await send_acked_byte(0x70);
-  await send_acked_byte(0x00);
-  await send_acked_byte(0xde);
+async function poke(addr, val) {
+  await send_acked_byte(addr & 255);
+  await send_acked_byte(addr >> 8);
+  await send_acked_byte(val);
 
-  await send_acked_byte(0x63);
-  await send_acked_byte(0x00);
-  await send_acked_byte(0x00);
+}
+async function go() {
+  await poke(0x0070, 0xcd);
+
+  // terminate command loop
+  await poke(0x0063, 0x00);
 }
 
 go();
