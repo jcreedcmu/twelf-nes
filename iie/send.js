@@ -42,11 +42,25 @@ async function poke(addr, val) {
   await send_acked_byte(val);
 
 }
-async function go() {
-  await poke(0x0070, 0xcd);
+const GRAPHICS_MODE = 0xC050;
+const TEXT_MODE = 0xC051;
+const FULL_SCREEN = 0xC052;
+const MIXED = 0xC053;
+const HIRES_PAGE1 = 0xC054;
+const HIRES_PAGE2 = 0xC055;
+const LOWRES = 0xC056;
+const HIRES = 0xC057;
 
+async function go() {
+
+  await poke(GRAPHICS_MODE, 1);
+  await poke(FULL_SCREEN, 1);
+  await poke(HIRES, 1);
+  await poke(HIRES_PAGE1, 1);
+
+  process.exit(0);
   // terminate command loop
-  await poke(0x0063, 0x00);
+  // await poke(0x0063, 0x00);
 }
 
 go();
