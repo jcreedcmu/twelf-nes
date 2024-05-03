@@ -27,16 +27,20 @@ function oneByte() {
   }
 }
 
-async send_acked_byte(bb) {
+async function send_acked_byte(bb) {
+  console.log('writing byte', bb);
   tout.write(new Uint8Array([bb]), 'ascii');
+  console.log('waiting for ack...');
   const b =  await oneByte(tin);
   console.log('got byte', b);
 }
 
-async go() {
+async function go() {
   await send_acked_byte(0x70);
   await send_acked_byte(0x00);
   await send_acked_byte(0xde);
 }
 
 go();
+
+tin.resume();

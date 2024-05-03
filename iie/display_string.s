@@ -5,6 +5,7 @@
 	.export		_display_string
 	.export		_init_serial
 	.export		_print_serial
+	.export		_print_serial_ack
 	.export		_read_cmd
 	.export		_read_cmd_loop
 
@@ -26,6 +27,10 @@ msg:
 	.byte	"Hello from asm!"
 crnl:
    .byte 13, 10, 0
+msg2:
+	.byte	"Fetch serial ack", 13, 10, 0
+msg3:
+	.byte	"Three acks!", 13, 10, 0
 
 .segment	"CODE"
 
@@ -36,6 +41,7 @@ crnl:
 	rts
 .endproc
 
+
 	;; returns serial byte in A
 fetch_serial:
 	lda #$08 						  ; receive register full?
@@ -45,10 +51,14 @@ fetch_serial:
 	rts
 
 fetch_serial_ack:
+	lda #<(msg2)
+	ldx #>(msg2)
+	jsr _cputs
 	lda #$08 						  ; receive register full?
 	bit serial_status
 	beq fetch_serial_ack
-	ldx serial_data
+	lda serial_data
+	tax
 	lda #$ac							  ; "ack"
 	sta serial_data
 	txa
@@ -79,13 +89,25 @@ fetch_serial_ack:
    rts
 .endproc
 
+.proc _print_serial_ack: near
+	jsr fetch_serial_ack
+	jsr _cputhex8
+	lda #<(crnl)
+	ldx #>(crnl)
+	jsr _cputs
+   rts
+.endproc
+
 .proc _read_cmd: near
 	jsr fetch_serial_ack
 	sta cmd_addr1
 	jsr fetch_serial_ack
 	sta cmd_addr2
 	jsr fetch_serial_ack
-	ldy #0
+   sta cmd_val
+	lda #<(msg3)
+	ldx #>(msg3)
+	jsr _cputs
 	sta (cmd_addr1),y
    rts
 .endproc

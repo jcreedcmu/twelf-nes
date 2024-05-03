@@ -22,6 +22,7 @@ void enter_hires_mode() {
 void init_serial(void);
 void display_string(void);
 void print_serial(void);
+void print_serial_ack(void);
 void read_cmd(void);
 void read_cmd_loop(void);
 
@@ -31,6 +32,7 @@ void main(void) {
   display_string();
 
   while (1) {
+	 cputs("> ");
 	 i = cgetc();
 	 if (i == 'I') {
 		init_serial();
@@ -50,6 +52,9 @@ void main(void) {
 	 else if (i == 'P') {
 		print_serial();
 	 }
+	 else if (i == 'Q') {
+		print_serial_ack();
+	 }
 	 else if (i == 'C') {
 		read_cmd();
 	 }
@@ -59,6 +64,7 @@ void main(void) {
 	 else if (i == 'D') {
 		cputs("debugging byte: ");
 		cputhex8(PEEK(0x0070));
+		cputs("\r\n");
 	 }
 	 else
 		cputc(i);
