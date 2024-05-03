@@ -3,8 +3,8 @@
 What I want is to have a loop where the apple ii is listening to the serial port,
 waiting for triples of bytes that look like
 
-[byte] HI ADDR
 [byte] LO ADDR
+[byte] HI ADDR
 [byte] VALUE
 
 and then it writes VALUE to ADDR. I want to ACK each byte back to the

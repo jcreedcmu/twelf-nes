@@ -22,6 +22,8 @@ void enter_hires_mode() {
 void init_serial(void);
 void display_string(void);
 void print_serial(void);
+void read_cmd(void);
+void read_cmd_loop(void);
 
 void main(void) {
   unsigned char i;
@@ -47,6 +49,12 @@ void main(void) {
 	 }
 	 else if (i == 'P') {
 		print_serial();
+	 }
+	 else if (i == 'C') {
+		read_cmd();
+	 }
+	 else if (i == 'L') {
+		read_cmd_loop();
 	 }
 	 else
 		cputc(i);

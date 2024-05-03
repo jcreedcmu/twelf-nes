@@ -5,12 +5,20 @@
 	.export		_display_string
 	.export		_init_serial
 	.export		_print_serial
+	.export		_read_cmd
+	.export		_read_cmd_loop
 
 slot					= $20
 serial_ctl1 	 	= $C08A+slot
 serial_ctl2 	 	= $C08B+slot
 serial_data			= $C088+slot  ; Both data read and data write
 serial_status		= $C089+slot
+
+scratch = $60
+cmd_addr1 = scratch+0
+cmd_addr2 = scratch+1
+cmd_val = scratch+2
+loop_continue = scratch+3
 
 .segment	"RODATA"
 
@@ -36,6 +44,16 @@ fetch_serial:
 	lda serial_data
 	rts
 
+fetch_serial_ack:
+	lda #$08 						  ; receive register full?
+	bit serial_status
+	beq fetch_serial_ack
+	ldx serial_data
+	lda #$ac							  ; "ack"
+	sta serial_data
+	txa
+	rts
+
 .proc	_init_serial: near
 
    ;; DTR/DSR state change still producing interrupts when dip switch
@@ -58,5 +76,32 @@ fetch_serial:
 	lda #<(crnl)
 	ldx #>(crnl)
 	jsr _cputs
+   rts
+.endproc
+
+.proc _read_cmd: near
+	jsr fetch_serial_ack
+	sta cmd_addr1
+	jsr fetch_serial_ack
+	sta cmd_addr2
+	jsr fetch_serial_ack
+	ldy #0
+	sta (cmd_addr1),y
+   rts
+.endproc
+
+.proc _read_cmd_loop: near
+   lda #$1
+   sta loop_continue
+loop:
+	jsr fetch_serial_ack
+	sta cmd_addr1
+	jsr fetch_serial_ack
+	sta cmd_addr2
+	jsr fetch_serial_ack
+	ldy #0
+	sta (cmd_addr1),y
+	lda loop_continue
+   bne loop
    rts
 .endproc
