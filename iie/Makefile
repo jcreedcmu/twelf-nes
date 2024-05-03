@@ -13,4 +13,4 @@ adt:
 	sh ~/pgit/adtpro/ADTPro-2.1.0/adtpro.sh
 
 stty:
-	stty -F /dev/ttyUSB0 9600 cs8 cstopb -parenb -icanon istrip -ctlecho
+	stty -F /dev/ttyUSB0 9600 cs8 cstopb -parenb -icanon -istrip -ctlecho

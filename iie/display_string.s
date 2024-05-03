@@ -54,9 +54,10 @@ fetch_serial_ack:
 	lda #<(msg2)
 	ldx #>(msg2)
 	jsr _cputs
+fetch_serial_ack_loop:
 	lda #$08 						  ; receive register full?
 	bit serial_status
-	beq fetch_serial_ack
+	beq fetch_serial_ack_loop
 	lda serial_data
 	tax
 	lda #$ac							  ; "ack"

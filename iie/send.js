@@ -3,9 +3,10 @@ const tout = fs.createWriteStream('/dev/ttyUSB0');
 const tin = fs.createReadStream('/dev/ttyUSB0');
 
 const blockedReaders = [];
-const readBuffer = [];
+let readBuffer = [];
 
-tin.onmessage = chunk => {
+tin.on('data', chunk => {
+  console.log('got chunk', chunk);
   readBuffer = [...readBuffer, ...chunk];
   console.log('debug:', readBuffer);
   if (blockedReaders.length > 0) {
@@ -13,7 +14,7 @@ tin.onmessage = chunk => {
 	 const value = readBuffer.shift();
 	 reader(value);
   }
-}
+});
 
 function oneByte() {
   if (readBuffer.length > 0) {
