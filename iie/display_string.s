@@ -110,6 +110,7 @@ fetch_serial_ack_loop:
 	ldx #>(msg3)
 	jsr _cputs
 	ldy #0
+   lda cmd_val
 	sta (cmd_addr1),y
    rts
 .endproc
