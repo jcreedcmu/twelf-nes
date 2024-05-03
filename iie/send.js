@@ -1,4 +1,4 @@
-const fs = require('fs');
+import * as fs from 'fs';
 const tout = fs.createWriteStream('/dev/ttyUSB0');
 const tin = fs.createReadStream('/dev/ttyUSB0');
 

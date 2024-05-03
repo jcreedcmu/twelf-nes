@@ -14,3 +14,6 @@ adt:
 
 stty:
 	stty -F /dev/ttyUSB0 9600 cs8 cstopb -parenb -icanon -istrip -ctlecho
+
+twelf-a2e.pgm:
+	convert -compress none twelf-a2e.png twelf-a2e.pgm
