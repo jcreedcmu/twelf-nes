@@ -58,6 +58,21 @@ async function go() {
   await poke(HIRES, 1);
   await poke(HIRES_PAGE1, 1);
 
+  // width is 280 "dots", but 140 "pixels"
+  // height is 192 "pixels"
+
+  // 7 dots per byte (plus palette bit) so 40 bytes per line
+
+  for (let q = 0; q < 3; q++) {
+  for (let k = 0; k < 8; k++) {
+	 for (let j = 0; j < 8; j++) {
+		for (let i = 0; i < 40; i++) {
+		  await poke(0x2000 + 0x0400 * j + 0x080 * k + 0x0028 * q + i, i % 2 ? 0x2a : 0x55);
+		}
+	 }
+  }
+}
+
   process.exit(0);
   // terminate command loop
   // await poke(0x0063, 0x00);
