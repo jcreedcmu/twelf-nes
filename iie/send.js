@@ -1,4 +1,6 @@
 import * as fs from 'fs';
+import { twelfImage } from './twelf-image.js';
+
 const tout = fs.createWriteStream('/dev/ttyUSB0');
 const tin = fs.createReadStream('/dev/ttyUSB0');
 
@@ -94,16 +96,13 @@ async function go() {
   await poke(HIRES, 1);
   await poke(HIRES_PAGE1, 1);
 
-//  [G p g p G p g] [p G p g p G p] [g p G p g p G] [p g p G p g p] [G p g p G p g] [p G p g p G p] [g p G p g p G]
-//  [p g p G p g p]
-
-  for (let y = 100 ; y < 110; y++) {
-  for (let i = 0; i < 40; i++) {
-	 await poke(0x2000 + i + offset_of_y(y), y % 2 ? [0x08, 0x11, 0x22, 0x44][i%4] : [0x22, 0x44, 0x08, 0x11][i%4] );
+  let img = twelfImage();
+  for (let y = 0; y < 192; y++) {
+	 for (let x = 0; x < 40; x++) {
+	   const srci = y * 40 + x;
+		await poke(0x2000 + x + offset_of_y(y), img[srci] );
+	 }
   }
-  }
-//  await fill_screen_with_purple();
-
 
   process.exit(0);
   // terminate command loop
