@@ -40,6 +40,10 @@ async function go() {
   await send_acked_byte(0x70);
   await send_acked_byte(0x00);
   await send_acked_byte(0xde);
+
+  await send_acked_byte(0x63);
+  await send_acked_byte(0x00);
+  await send_acked_byte(0x00);
 }
 
 go();
