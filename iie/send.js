@@ -75,6 +75,18 @@ function offset_of_y(y) {
   return 0x0400 * j + 0x080 * k + 0x0028 * q;
 }
 
+// at even column:
+// 0x2a green    P G P G P G P
+// 0x55 purple   B Y B Y B Y B
+// 0xaa yellow
+// 0xd5 blue
+
+// at odd column:
+// 0x2a purple    G P G P G P G
+// 0x55 green     Y B Y B Y B Y
+// 0xaa blue
+// 0xd5 yellow
+
 async function go() {
 
   await poke(GRAPHICS_MODE, 1);
@@ -82,14 +94,14 @@ async function go() {
   await poke(HIRES, 1);
   await poke(HIRES_PAGE1, 1);
 
-   // [0] 1 0 1 0 1 0 1 - [0] 0 1 0 1 0 1 0 // purple
-   // [0] 0 1 0 1 0 1 0 - [0] 1 0 1 0 1 0 1 // green
-   // [0] 0 1 0 1 0 1 0 - [0] 1 0 1 0 1 0 1 // green
-   // [0] 0 1 0 0 0 1 0 - [0] 0 0 1 0 0 0 1 // green
-  for (let i = 0; i < 192; i++) {
-	 await poke(0x2000 + 20 + offset_of_y(i), 0x00 );
-  }
+//  [G p g p G p g] [p G p g p G p] [g p G p g p G] [p g p G p g p] [G p g p G p g] [p G p g p G p] [g p G p g p G]
+//  [p g p G p g p]
 
+  for (let y = 100 ; y < 110; y++) {
+  for (let i = 0; i < 40; i++) {
+	 await poke(0x2000 + i + offset_of_y(y), y % 2 ? [0x08, 0x11, 0x22, 0x44][i%4] : [0x22, 0x44, 0x08, 0x11][i%4] );
+  }
+  }
 //  await fill_screen_with_purple();
 
 
