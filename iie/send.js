@@ -51,6 +51,30 @@ const HIRES_PAGE2 = 0xC055;
 const LOWRES = 0xC056;
 const HIRES = 0xC057;
 
+async function fill_screen_with_purple() {
+  // width is 280 "dots", but 140 "pixels"
+  // height is 192 "pixels"
+
+  // 7 dots per byte (plus palette bit) so 40 bytes per line
+
+  for (let q = 0; q < 3; q++) {
+	 for (let k = 0; k < 8; k++) {
+		for (let j = 0; j < 8; j++) {
+		  for (let i = 0; i < 40; i++) {
+			 await poke(0x2000 + 0x0400 * j + 0x080 * k + 0x0028 * q + i, i % 2 ? 0x2a : 0x55);
+		  }
+		}
+	 }
+  }
+}
+
+function offset_of_y(y) {
+  const j = y % 8;
+  const k = Math.floor(y / 8) % 8;
+  const q = Math.floor(y / 64) % 3;
+  return 0x0400 * j + 0x080 * k + 0x0028 * q;
+}
+
 async function go() {
 
   await poke(GRAPHICS_MODE, 1);
@@ -58,20 +82,16 @@ async function go() {
   await poke(HIRES, 1);
   await poke(HIRES_PAGE1, 1);
 
-  // width is 280 "dots", but 140 "pixels"
-  // height is 192 "pixels"
-
-  // 7 dots per byte (plus palette bit) so 40 bytes per line
-
-  for (let q = 0; q < 3; q++) {
-  for (let k = 0; k < 8; k++) {
-	 for (let j = 0; j < 8; j++) {
-		for (let i = 0; i < 40; i++) {
-		  await poke(0x2000 + 0x0400 * j + 0x080 * k + 0x0028 * q + i, i % 2 ? 0x2a : 0x55);
-		}
-	 }
+   // [0] 1 0 1 0 1 0 1 - [0] 0 1 0 1 0 1 0 // purple
+   // [0] 0 1 0 1 0 1 0 - [0] 1 0 1 0 1 0 1 // green
+   // [0] 0 1 0 1 0 1 0 - [0] 1 0 1 0 1 0 1 // green
+   // [0] 0 1 0 0 0 1 0 - [0] 0 0 1 0 0 0 1 // green
+  for (let i = 0; i < 192; i++) {
+	 await poke(0x2000 + 20 + offset_of_y(i), 0x00 );
   }
-}
+
+//  await fill_screen_with_purple();
+
 
   process.exit(0);
   // terminate command loop
