@@ -17,3 +17,17 @@ stty:
 
 twelf-a2e.pgm:
 	convert -compress none twelf-a2e.png twelf-a2e.pgm
+
+# Speaker code from
+# https://github.com/cc65/wiki/wiki/Apple-II-4.-Compiling-assembly-code-for-the-Apple-II
+
+speaker.bin: speaker.s
+	cl65 -t apple2 -u __EXEHDR__ speaker.s apple2.lib -o speaker.bin -C apple2-asm.cfg
+
+speaker.dsk: speaker.bin
+	cp ProDOS_2_4_3.po speaker.dsk
+	java -jar $(AC) -p speaker.dsk speaker.system sys < $(TARGET)/apple2/util/loader.system
+	java -jar $(AC) -as speaker.dsk speaker bin < speaker.bin
+
+# Can run with wine like
+# wine AppleWin.exe -d1 "Z:\\home\\jcreed\\proj\\twelf-nes\\iie\\speaker.dsk"
