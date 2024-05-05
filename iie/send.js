@@ -8,9 +8,9 @@ const blockedReaders = [];
 let readBuffer = [];
 
 tin.on('data', chunk => {
-  console.log('got chunk', chunk);
+  // console.log('got chunk', chunk);
   readBuffer = [...readBuffer, ...chunk];
-  console.log('debug:', readBuffer);
+  // console.log('debug:', readBuffer);
   if (blockedReaders.length > 0) {
 	 const reader =	 blockedReaders.shift();
 	 const value = readBuffer.shift();
@@ -31,14 +31,15 @@ function oneByte() {
 }
 
 async function send_acked_byte(bb) {
-  console.log('writing byte', bb);
+  // console.log('writing byte', bb);
   tout.write(new Uint8Array([bb]), 'ascii');
-  console.log('waiting for ack...');
+  // console.log('waiting for ack...');
   const b =  await oneByte(tin);
-  console.log('got byte', b);
+  // console.log('got byte', b);
 }
 
 async function poke(addr, val) {
+  console.log(`poking ${val} to address ${addr.toString(16)}`);
   await send_acked_byte(addr & 255);
   await send_acked_byte(addr >> 8);
   await send_acked_byte(val);
@@ -117,10 +118,10 @@ async function draw_white_line() {
 
 async function send_raw_program() {
   let addr = 0x6000;
-  fs.readFileSync('raw.bin').forEach(async c => {
+  for (const c of fs.readFileSync('raw.bin')) {
 	 await poke(addr, c);
 	 addr++;
-  });
+  }
   // This causes the program in display_string.s to terminate its
   // serial-read-and-poke loop and jump to 0x6000, where we've
   // put our program
@@ -128,8 +129,9 @@ async function send_raw_program() {
 }
 
 async function debug() {
-  await draw_white_line();
-  await poke(0x2001, 0x00);
+//  await draw_white_line();
+ // await poke(0x2001, 0x00);
+  await send_raw_program();
 }
 
 async function go() {

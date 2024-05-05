@@ -61,6 +61,6 @@ loop:
 	sta (cmd_addr1),y
 	lda loop_continue
    bne loop
-	jmp $6000
-   rts
+	jsr $6000
+   jmp _read_cmd_loop
 .endproc
