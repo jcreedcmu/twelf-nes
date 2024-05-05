@@ -3,6 +3,7 @@
 prhex = $fdda ;; print accumulator as hex
 crout = $fd8e ;; print carriage return
 text_mode = $c051
+clrscr = $f832 ;; clear screen
 
 ;; According to http://www.applelogic.org/files/AIIETECHREF2.pdf
 ;; page 82 (pdf page 12) Table 4-6
@@ -13,6 +14,7 @@ rom_switch = $c08a
 start:
 	lda rom_switch
    lda text_mode
+   jsr clrscr
    lda #$cd
    jsr prhex
    jsr crout
