@@ -29,5 +29,10 @@ speaker.dsk: speaker.bin
 	java -jar $(AC) -p speaker.dsk speaker.system sys < $(TARGET)/apple2/util/loader.system
 	java -jar $(AC) -as speaker.dsk speaker bin < speaker.bin
 
-# Can run with wine like
+# Can run the above with wine like
 # wine AppleWin.exe -d1 "Z:\\home\\jcreed\\proj\\twelf-nes\\iie\\speaker.dsk"
+
+# This target assembles some source into a raw binary suitable for
+# splatting into memory over serial at address 0x6000
+raw.bin: raw.s
+	cl65 -t apple2 raw.s  -o raw.bin -C apple2-asm.cfg --start-addr 0x6000

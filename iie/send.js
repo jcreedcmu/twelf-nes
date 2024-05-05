@@ -89,7 +89,7 @@ function offset_of_y(y) {
 // 0xaa blue
 // 0xd5 yellow
 
-async function go() {
+async function draw_twelf_logo() {
 
   await poke(GRAPHICS_MODE, 1);
   await poke(FULL_SCREEN, 1);
@@ -103,10 +103,38 @@ async function go() {
 		await poke(0x2000 + x + offset_of_y(y), img[srci] );
 	 }
   }
+}
 
+async function draw_white_line() {
+  await poke(GRAPHICS_MODE, 1);
+  await poke(FULL_SCREEN, 1);
+  await poke(HIRES, 1);
+  await poke(HIRES_PAGE1, 1);
+  for (let x = 0; x < 40; x++) {
+	 await poke(0x2000 + x, 0xff );
+  }
+}
+
+async function send_raw_program() {
+  let addr = 0x6000;
+  fs.readFileSync('raw.bin').forEach(async c => {
+	 await poke(addr, c);
+	 addr++;
+  });
+  // This causes the program in display_string.s to terminate its
+  // serial-read-and-poke loop and jump to 0x6000, where we've
+  // put our program
+  await poke(0x0063, 0x00);
+}
+
+async function debug() {
+  await draw_white_line();
+  await poke(0x2001, 0x00);
+}
+
+async function go() {
+  await debug();
   process.exit(0);
-  // terminate command loop
-  // await poke(0x0063, 0x00);
 }
 
 go();
