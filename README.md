@@ -2,11 +2,12 @@ Twelf NES
 =========
 
 Taking some notes on what might be possible for an "implementation" of
-"Twelf" on NES. I'm imagining some kind of very primitive typechecker
-might fit in a cartridge.
+"Twelf" on the 6502 (e.g. NES or Apple IIe). I'm imagining *some* kind
+of dependent typechecker might be possible. Might be worth restricting
+to first-order.
 
-Input Possibilities
--------------------
+NES Input Possibilities
+-----------------------
 
 ### Family BASIC
 
