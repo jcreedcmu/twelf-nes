@@ -73,21 +73,19 @@ and produce
 [kkqkc : type]
 So what might the implementation of this look like?
 
-Imagine we have a "term register" M and a "type register" A
 Imagine some instructions like:
 
 - `{` : allocate a context for processing
-- `→Γ` : pop (M:A) (A':type) off of stack assert A = A', push M on current Γ
+- `→Γ` :
+    - pop (M:A) (A':type) off of stack
+	- require A = A'
+	- push M onto current Γ
 - `!n`: copy debruijn n of Γ to stack
-- `→M` : pop current term and put in M
-- `→A` : pop current type and put it in A
-- `MA→` : push M with A
-- `}(c)` : pops (A : type/kind) off stack, concatenates all terms in current Γ with c,
-  leaves behind (Γc : A)
+- `}(c)` :
+    - pop (A : type/kind) off stack,
+	- concatenate all terms in current Γ with c, consuming Γ in the process
+    - push (Γc : A)
 - `type`: push (type : kind)
-
-Assume running "o" pushes (o:type) onto the term stack
-Assume running "b" pops two arguments off the term stack and produces xyb : type
 
 "Compilation" yields:
 ```
