@@ -37,7 +37,7 @@ the above signature is:
     type Π Π : b
      o : a
      a a b : _
-    type : c
+    type Π Π : c
      o : x
      o : y
     x y b Π Π : q

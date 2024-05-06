@@ -1,0 +1,12 @@
+type : o
+o : k
+ o : _
+ o : _
+type Π Π : b
+ o : a
+ a a b : _
+type Π Π : c
+ o : x
+ o : y
+x y b Π Π : q
+k k k q c : d
