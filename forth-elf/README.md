@@ -75,8 +75,8 @@ So what might the implementation of this look like?
 
 Imagine some instructions like:
 
-- `{` : allocate a context for processing
-- `→Γ` :
+- `{` : allocate a context Γ for processing
+- `→` :
     - pop (M:A) (A':type) off of stack
 	- require A = A'
 	- push M onto current Γ
@@ -91,8 +91,21 @@ Imagine some instructions like:
 ```
 o ⇒ { type }(o)
 k ⇒ { o }(k)
-b ⇒ { o →Γ o →Γ type }(b)
-c ⇒ { o →Γ !1 !1 b →Γ type }(c)
-q ⇒ { o →Γ o →Γ !1 !2 b }(q)
+b ⇒ { o → o → type }(b)
+c ⇒ { o → !1 !1 b → type }(c)
+q ⇒ { o → o → !1 !2 b }(q)
 d ⇒ { k k q k c }(d)
+```
+
+Markers
+-------
+What if instead of counting Πs I just have a delimiter I'm scanning back to?
+And → means anonymous, i.e. : _? And , is a no-op?
+```
+    type : o
+    o : k
+	{ o → o → type } : b
+    { o : a , a a b → type } : c
+    { o : x , o : y , x y b } : q
+    k k q k c : d
 ```
