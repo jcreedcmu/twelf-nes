@@ -10,12 +10,12 @@ conveniently structured state.
 I'm ok with --- for now --- limiting myself to the fragment of
 first-order dependent types with only Π. So something like
 ```
-	 o : type.
-	 k : o.
-	 b : o → o → type.
-	 c : {a : o} b a a → type.
-	 q : {x : o} {y : o} b x y.
-	 d : c k (q k k).
+     o : type.
+     k : o.
+     b : o → o → type.
+     c : {a : o} b a a → type.
+     q : {x : o} {y : o} b x y.
+     d : c k (q k k).
 ```
 
 is fair game, but the representation of this may be quite different.
@@ -78,12 +78,12 @@ Imagine some instructions like:
 - `{` : allocate a context Γ for processing
 - `→` :
     - pop (M:A) (A':type) off of stack
-	- require A = A'
-	- push M onto current Γ
+    - require A = A'
+    - push M onto current Γ
 - `!n`: copy debruijn n of Γ to stack
 - `}(c)` :
     - pop (A : type/kind) off stack,
-	- concatenate all terms in current Γ with c, consuming Γ in the process
+    - concatenate all terms in current Γ with c, consuming Γ in the process
     - push (Γc : A)
 - `type`: push (type : kind)
 
@@ -107,7 +107,7 @@ Also suppose:
 ```
     { type } o
     { o } k
-	{ o → o → type } b
+    { o → o → type } b
     { o : a → a a b → type } c
     { o : x → o : y → x y b } q
     { k k q k c } d
@@ -121,8 +121,8 @@ and ":" mean "add to signature"?
 ```
     type : o
     o : k
-	o → o → type : b
+    o → o → type : b
     o ; a → a a b → type : c
-	o ; x → o ; y → x y b : q
+    o ; x → o ; y → x y b : q
     k k q k c : d
 ```

@@ -2,7 +2,13 @@
 import * as fs from 'fs';
 
 const input = fs.readFileSync('input.txt', 'utf8').split(/\s+/).filter(x => x.length);
-const state = {sig: [], stack: []};
+const state = {
+  sig: [],
+  stack: [],
+  context: [],
+  program: [],
+  name: '_',
+};
 
 function getSpineFromStack(G, klass) {
   switch (klass.t) {
@@ -36,28 +42,54 @@ function replaceWithVar(e, oldLevel, n) {
 }
 
 let i = 0;
+
+
 while (i < input.length) {
   const tok = input[i];
   // console.log(`got token: ${tok}`);
   switch (tok) {
-  case ':': {
+  case '{': {
+	 state.name = '_';
+	 state.program.push('{');
+  } break;
+
+  case '}': {
 	 i++; const name = input[i]; // XXX: risk of running off end of input
-	 const klass = state.stack.pop();
-	 state.sig.push({name, klass});
+	 state.program.push('}');
+	 state.program.push(name);
+	 state.sig.push({name, program: state.program});
+	 state.program = [];
+	 state.context = [];
   } break;
-  case 'type': state.stack.push({t: 'type'}); break;
-  case 'Π': {
-	 const frame = state.sig.pop();
-	 const b = state.stack.pop();
-	 const oldLevel = state.sig.length;
-	 state.stack.push({t: 'pi', a: frame.klass, b: replaceWithVar(b, oldLevel, 0)});
+
+  case 'type': state.stack.push({ x: {t: 'type'}, k: {t: 'kind'}}); break;
+
+  case ':' {
+	 i++; state.name = input[i]; // XXX: risk of running off end of input
   } break;
+
+  case '→': {
+	 state.program.push('→');
+	 const top = state.stack.pop();
+	 if (!(top.k.t == 'type' || top.k.t == 'kind')) {
+		throw new Error(`tried to bind non-classifier`);
+	 }
+	 state.context.push({name, k: top.x});
+  }
   default: {
-	 const level = state.sig.findIndex(frame => frame.name == tok);
-	 if (level == -1) throw new Error(`${tok} not found in signature`);
-	 const head = state.sig.length - level;
-	 const spine = getSpineFromStack([], state.sig[level].klass);
-	 state.stack.push({t: 'appc', level, spine});
+	 const vlev = state.context.findIndex(frame => frame.name == tok);
+	 if (vlev == -1) {
+		const cid = state.sig.findIndex(frame => frame.name == tok);
+		if (cid == -1) throw new Error(`${tok} not found in context or signature`);
+		// found in signature
+		state.program.push(tok);
+
+	 }
+	 else {
+		// found in context
+		const vix = state.context.length - 1 - vlev;
+		state.program.push(vix);
+	 }
   } break;
   }
   i++;
