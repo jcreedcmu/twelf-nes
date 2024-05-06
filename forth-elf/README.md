@@ -100,12 +100,29 @@ d ⇒ { k k q k c }(d)
 Markers
 -------
 What if instead of counting Πs I just have a delimiter I'm scanning back to?
-And → means anonymous, i.e. : _? And , is a no-op?
+Also suppose:
+ → actually performs the signature append
+ : just does naming
+
+```
+    { type } o
+    { o } k
+	{ o → o → type } b
+    { o : a → a a b → type } c
+    { o : x → o : y → x y b } q
+    { k k q k c } d
+```
+
+Distinct Binders
+----------------
+What if instead of counting Πs I just have ";" mean "add to context"
+and ":" mean "add to signature"?
+
 ```
     type : o
     o : k
-	{ o → o → type } : b
-    { o : a , a a b → type } : c
-    { o : x , o : y , x y b } : q
+	o → o → type : b
+    o ; a → a a b → type : c
+	o ; x → o ; y → x y b : q
     k k q k c : d
 ```
