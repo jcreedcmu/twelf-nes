@@ -1,5 +1,5 @@
 forth-elf
----------
+=========
 
 In order to get anything remotely resembling dependent type-checking
 on very resource-constrained hardware, I think it is a good idea to
@@ -54,3 +54,47 @@ The three magic operations are:
 - `Π`: assert the stack has one element, and pop it, and call it `B`.
    Pop the most recently added declaration `x : A` in the signature.
    Push (some representation of) `Πx:A.B` onto the stack.
+
+Type Checking Functions
+-----------------------
+
+Every time I install a type family or term constant into the signature,
+there is implicitly
+- a type-checking function that goes along with it.
+The local argument types inside the Π-chain of a constant's arguments each have:
+- a substitution function that goes along with it
+
+Maybe the substitution functions only get created by Π? They make sense
+for types that have local contexts.
+
+Running the constant c should take a term stack
+[kkq : kkb, k : o]
+and produce
+[kkqkc : type]
+So what might the implementation of this look like?
+
+Imagine we have a "term register" M and a "type register" A
+Imagine some instructions like:
+
+- `{` : allocate a context for processing
+- `→Γ` : pop (M:A) (A':type) off of stack assert A = A', push M on current Γ
+- `!n`: copy debruijn n of Γ to stack
+- `→M` : pop current term and put in M
+- `→A` : pop current type and put it in A
+- `MA→` : push M with A
+- `}(c)` : pops (A : type/kind) off stack, concatenates all terms in current Γ with c,
+  leaves behind (Γc : A)
+- `type`: push (type : kind)
+
+Assume running "o" pushes (o:type) onto the term stack
+Assume running "b" pops two arguments off the term stack and produces xyb : type
+
+"Compilation" yields:
+```
+o ⇒ { type }(o)
+k ⇒ { o }(k)
+b ⇒ { o →Γ o →Γ type }(b)
+c ⇒ { o →Γ !1 !1 b →Γ type }(c)
+q ⇒ { o →Γ o →Γ !1 !2 b }(q)
+d ⇒ { k k q k c }(d)
+```
