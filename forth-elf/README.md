@@ -41,7 +41,7 @@ the above signature is:
      o : x
      o : y
     x y b Π Π : q
-    k k k q c : d
+    k k q k c : d
 ```
 The three magic operations are:
 
