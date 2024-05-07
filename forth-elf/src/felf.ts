@@ -164,36 +164,6 @@ function runProgram(program: Program) {
         assertEqual(v1.x, v2.k);
         state.ectxs[0].unshift(v2);
       } break;
-      case '+a': {
-        state.stack.push({ x: { t: 'appc', cid: 3, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
-      } break;
-      case '+x': {
-        state.stack.push({ x: { t: 'appc', cid: 4, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
-      } break;
-      case '+y': {
-        state.stack.push({ x: { t: 'appc', cid: 5, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
-      } break;
-      case '+b': {
-        const f1 = state.stack.pop()!;
-        const f2 = state.stack.pop()!;
-        state.stack.push({ x: { t: 'appc', cid: 2, spine: [f1.x, f2.x] }, k: { t: 'type' } });
-      } break;
-      case '+q': {
-        const f1 = state.stack.pop()!;
-        const f2 = state.stack.pop()!;
-        state.stack.push({
-          x: { t: 'appc', cid: 4, spine: [f1.x, f2.x] },
-          k: { t: 'appc', cid: 2, spine: [f1.x, f2.x] }
-        });
-      } break;
-      case '+c': {
-        const f1 = state.stack.pop()!;
-        const f2 = state.stack.pop()!;
-        state.stack.push({
-          x: { t: 'appc', cid: 3, spine: [f1.x, f2.x] },
-          k: { t: 'type' },
-        });
-      } break;
       default: {
         const itok = parseInt(tok);
         if (!isNaN(itok)) {
@@ -239,10 +209,6 @@ function absDctx(dctx: DefContextFrame[], e: Expr): Expr {
   return { t: 'pi', a: dctx[0].k, b: absDctx(dctx.slice(1), e) };
 }
 
-function allowList(name: string): boolean {
-  return name == 'o' || name == 'k' || name == 'd' || name == 'b' || name == 'c' || name == 'q';
-}
-
 function interp(input: string[]) {
   let i = 0;
 
@@ -270,13 +236,7 @@ function interp(input: string[]) {
         }
         state.program.push('}');
         state.program.push(name);
-
-        if (allowList(name))
-          state.sig.push({ name, klass: absDctx(state.dctx, top.x), program: state.program });
-        else {
-          console.log('using fake program; program would be', state.program.join(" "));
-          state.sig.push({ name, klass: absDctx(state.dctx, top.x), program: ["+" + name] });
-        }
+        state.sig.push({ name, klass: absDctx(state.dctx, top.x), program: state.program });
         state.dctx = [];
         state.program = [];
         state.name = '_';
