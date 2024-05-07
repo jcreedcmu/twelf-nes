@@ -115,6 +115,9 @@ function assertEqual(e1: Expr, e2: Expr) {
   if (f1 != f2) {
     throw new Error(`type error ${f1} != ${f2}`);
   }
+  else {
+    console.log(`success: ${f1} = ${f2}`);
+  }
 }
 
 function runProgram(program: Program) {
@@ -237,7 +240,7 @@ function absDctx(dctx: DefContextFrame[], e: Expr): Expr {
 }
 
 function allowList(name: string): boolean {
-  return name == 'o' || name == 'k' || name == 'd';
+  return name == 'o' || name == 'k' || name == 'd' || name == 'b';
 }
 
 function interp(input: string[]) {
