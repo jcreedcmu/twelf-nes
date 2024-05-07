@@ -145,6 +145,25 @@ function interp(input: string[]) {
         state.order = 0;
       } break;
 
+      case '}': {
+        i++;
+        const name = input[i]; // XXX: risk of running off end of input
+
+        const top = state.stack.pop();
+        if (top == undefined) {
+          throw new Error(`stack underflow`);
+        }
+        if (!(top.k.t == 'type' || top.k.t == 'kind')) {
+          throw new Error(`tried to bind non-classifier`);
+        }
+
+        state.sig.push({ name, klass: top.x, program: ["+" + name] });
+        state.program = [];
+        state.name = '_';
+
+        state.order = 0;
+      } break;
+
       case 'type': {
         state.stack.push({ x: { t: 'type' }, k: { t: 'kind' } });
       } break;
