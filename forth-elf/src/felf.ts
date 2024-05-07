@@ -131,9 +131,6 @@ function runProgram(program: Program) {
       case '→': {
         throw new Error(`unimp`);
       } break;
-      case '+o': {
-        state.stack.push({ x: { t: 'appc', cid: 0, spine: [] }, k: { t: 'type' } });
-      } break;
       case '+a': {
         state.stack.push({ x: { t: 'appc', cid: 3, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
       } break;
@@ -142,9 +139,6 @@ function runProgram(program: Program) {
       } break;
       case '+y': {
         state.stack.push({ x: { t: 'appc', cid: 5, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
-      } break;
-      case '+k': {
-        state.stack.push({ x: { t: 'appc', cid: 1, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
       } break;
       case '+b': {
         const f1 = state.stack.pop()!;
@@ -172,8 +166,14 @@ function runProgram(program: Program) {
         if (!isNaN(itok)) {
           state.stack.push(state.ectxs[0][itok]);
         }
-        else
-          throw new Error(`unknown program instruction ${tok}`);
+        else {
+          const cid = state.sig.findIndex(frame => frame.name == tok);
+          if (cid != -1) {
+            runProgram(state.sig[cid].program);
+          }
+          else
+            throw new Error(`unknown program instruction ${tok}`);
+        }
       }
     }
     ix++;
@@ -207,7 +207,7 @@ function absDctx(dctx: DefContextFrame[], e: Expr): Expr {
 }
 
 function allowList(name: string): boolean {
-  return name == 'o';
+  return name == 'o' || name == 'k';
 }
 
 function interp(input: string[]) {
