@@ -32,7 +32,6 @@ type State = {
   sig: SigFrame[],
   stack: StackFrame[],
   dctx: DefContextFrame[],
-  ectxs: EvalContextFrame[][], // everything involving these should involve shift/unshift, not push/pop
   program: Program,
   name: string,
 }
@@ -42,7 +41,6 @@ const state: State = {
   stack: [],
   program: [],
   dctx: [],
-  ectxs: [],
   name: '_',
 };
 
@@ -141,7 +139,7 @@ function assertEqual(e1: Expr, e2: Expr) {
 
 function runCid(cid: number) {
   const program = state.sig[cid].program;
-  state.ectxs.unshift([]);
+  const ectx: StackFrame[] = [];
 
   for (const tok of program) {
     switch (tok.t) {
@@ -158,10 +156,10 @@ function runCid(cid: number) {
           throw new Error(`underflow during →2`);
         }
         assertEqual(v1.x, v2.k);
-        state.ectxs[0].unshift(v2);
+        ectx.unshift(v2);
       } break;
       case 'deb': {
-        state.stack.push(state.ectxs[0][tok.ix]);
+        state.stack.push(ectx[tok.ix]);
       } break;
       case 'call': {
         runCid(tok.cid);
@@ -176,7 +174,7 @@ function runCid(cid: number) {
   if (!(a.k.t == 'type' || a.k.t == 'kind')) {
     throw new Error(`tried to close-brace non-classifier '${JSON.stringify(a)}'`);
   }
-  const ectx = state.ectxs.shift();
+
   if (ectx == undefined) {
     throw new Error(`underflow during close-brace ectx pop`);
   }
