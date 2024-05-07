@@ -240,7 +240,7 @@ function absDctx(dctx: DefContextFrame[], e: Expr): Expr {
 }
 
 function allowList(name: string): boolean {
-  return name == 'o' || name == 'k' || name == 'd' || name == 'b' || name == 'c';
+  return name == 'o' || name == 'k' || name == 'd' || name == 'b' || name == 'c' || name == 'q';
 }
 
 function interp(input: string[]) {
