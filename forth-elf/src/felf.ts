@@ -7,7 +7,7 @@ type Expr =
   | { t: 'type' }
   | { t: 'kind' }
   | { t: 'pi', a: Expr, b: Expr }
-  | { t: 'appc', level: number, spine: Expr[] }
+  | { t: 'appc', cid: number, spine: Expr[] }
   | { t: 'appv', head: number }
   ;
 type SigFrame = {
@@ -19,11 +19,12 @@ type SigFrame = {
 type StackFrame = { x: Expr, k: Expr };
 type DefContextFrame = { name: string, k: Expr };
 type Program = string[];
-
+type EvalContextFrame = { x: Expr, k: Expr };
 type State = {
   sig: SigFrame[],
   stack: StackFrame[],
   dctx: DefContextFrame[],
+  ectxs: EvalContextFrame[][], // everything involving these should involve shift/unshift, not push/pop
   program: Program,
   name: string,
 }
@@ -33,6 +34,7 @@ const state: State = {
   stack: [],
   program: [],
   dctx: [],
+  ectxs: [],
   name: '_',
 };
 
@@ -41,10 +43,10 @@ function replaceWithVar(e: Expr, oldLevel: number, n: number): Expr {
     case 'pi':
       return { t: 'pi', a: replaceWithVar(e.a, oldLevel, n), b: replaceWithVar(e.b, oldLevel, n + 1) };
     case 'appc':
-      if (e.level == oldLevel)
+      if (e.cid == oldLevel)
         return { t: 'appv', head: n };
       else
-        return { t: 'appc', level: e.level, spine: e.spine.map(e => replaceWithVar(e, oldLevel, n)) };
+        return { t: 'appc', cid: e.cid, spine: e.spine.map(e => replaceWithVar(e, oldLevel, n)) };
     case 'appv':
       return { t: 'appv', head: e.head };
     case 'type': return e;
@@ -69,7 +71,7 @@ function exprToString(e: Expr): string {
     case 'type': return 'Type';
     case 'kind': return 'Kind';
     case 'pi': return `Pi {_:${exprToString(e.a)}} ${exprToString(e.b)}`;
-    case 'appc': return appToSpine(state.sig[e.level].name, e.spine);
+    case 'appc': return appToSpine(state.sig[e.cid].name, e.spine);
     case 'appv': return `v${e.head}`;
   }
 }
@@ -95,47 +97,86 @@ ${SIG}`;
 }
 
 function runProgram(program: Program) {
-  for (const tok of program) {
+  let ix = 0;
+  while (ix < program.length) {
+    const tok = program[ix];
     switch (tok) {
+      case '{': {
+        state.ectxs.unshift([]);
+      } break;
+      case '}': {
+        ix++;
+        const name = program[ix]; // XXX: risk of running off end of input
+        const cid = state.sig.findIndex(frame => frame.name == name);
+        if (cid == -1) {
+          throw new Error(`const symbol '${name}' not found during close-brace`);
+        }
+        const a = state.stack.pop();
+        if (a == undefined) {
+          throw new Error(`underflow during close-brace`);
+        }
+        if (!(a.k.t == 'type' || a.k.t == 'kind')) {
+          throw new Error(`tried to close-brace non-classifier '${JSON.stringify(a)}'`);
+        }
+        const ectx = state.ectxs.shift();
+        if (ectx == undefined) {
+          throw new Error(`underflow during close-brace ectx pop`);
+        }
+        const spine = ectx.map(ec => ec.x).reverse();
+        state.stack.push({ x: { t: 'appc', cid, spine }, k: a.x });
+      } break;
+      case 'type': {
+        state.stack.push({ x: { t: 'type' }, k: { t: 'kind' } });
+      } break;
+      case '→': {
+        throw new Error(`unimp`);
+      } break;
       case '+o': {
-        state.stack.push({ x: { t: 'appc', level: 0, spine: [] }, k: { t: 'type' } });
+        state.stack.push({ x: { t: 'appc', cid: 0, spine: [] }, k: { t: 'type' } });
       } break;
       case '+a': {
-        state.stack.push({ x: { t: 'appc', level: 3, spine: [] }, k: { t: 'appc', level: 0, spine: [] } });
+        state.stack.push({ x: { t: 'appc', cid: 3, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
       } break;
       case '+x': {
-        state.stack.push({ x: { t: 'appc', level: 4, spine: [] }, k: { t: 'appc', level: 0, spine: [] } });
+        state.stack.push({ x: { t: 'appc', cid: 4, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
       } break;
       case '+y': {
-        state.stack.push({ x: { t: 'appc', level: 5, spine: [] }, k: { t: 'appc', level: 0, spine: [] } });
+        state.stack.push({ x: { t: 'appc', cid: 5, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
       } break;
       case '+k': {
-        state.stack.push({ x: { t: 'appc', level: 1, spine: [] }, k: { t: 'appc', level: 0, spine: [] } });
+        state.stack.push({ x: { t: 'appc', cid: 1, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
       } break;
       case '+b': {
         const f1 = state.stack.pop()!;
         const f2 = state.stack.pop()!;
-        state.stack.push({ x: { t: 'appc', level: 2, spine: [f1.x, f2.x] }, k: { t: 'type' } });
+        state.stack.push({ x: { t: 'appc', cid: 2, spine: [f1.x, f2.x] }, k: { t: 'type' } });
       } break;
       case '+q': {
         const f1 = state.stack.pop()!;
         const f2 = state.stack.pop()!;
         state.stack.push({
-          x: { t: 'appc', level: 4, spine: [f1.x, f2.x] },
-          k: { t: 'appc', level: 2, spine: [f1.x, f2.x] }
+          x: { t: 'appc', cid: 4, spine: [f1.x, f2.x] },
+          k: { t: 'appc', cid: 2, spine: [f1.x, f2.x] }
         });
       } break;
       case '+c': {
         const f1 = state.stack.pop()!;
         const f2 = state.stack.pop()!;
         state.stack.push({
-          x: { t: 'appc', level: 3, spine: [f1.x, f2.x] },
+          x: { t: 'appc', cid: 3, spine: [f1.x, f2.x] },
           k: { t: 'type' },
         });
       } break;
-      default:
-        throw new Error(`unknown program instruction ${tok}`);
+      default: {
+        const itok = parseInt(tok);
+        if (!isNaN(itok)) {
+          state.stack.push(state.ectxs[0][itok]);
+        }
+        else
+          throw new Error(`unknown program instruction ${tok}`);
+      }
     }
+    ix++;
   }
 }
 
@@ -165,6 +206,10 @@ function absDctx(dctx: DefContextFrame[], e: Expr): Expr {
   return { t: 'pi', a: dctx[0].k, b: absDctx(dctx.slice(1), e) };
 }
 
+function allowList(name: string): boolean {
+  return name == 'o';
+}
+
 function interp(input: string[]) {
   let i = 0;
 
@@ -192,8 +237,13 @@ function interp(input: string[]) {
         }
         state.program.push('}');
         state.program.push(name);
-        console.log('program would be', state.program.join(" "));
-        state.sig.push({ name, klass: absDctx(state.dctx, top.x), program: ["+" + name] });
+
+        if (allowList(name))
+          state.sig.push({ name, klass: absDctx(state.dctx, top.x), program: state.program });
+        else {
+          console.log('using fake program; program would be', state.program.join(" "));
+          state.sig.push({ name, klass: absDctx(state.dctx, top.x), program: ["+" + name] });
+        }
         state.dctx = [];
         state.program = [];
         state.name = '_';
