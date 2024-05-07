@@ -18,7 +18,17 @@ type SigFrame = {
 
 type StackFrame = { x: Expr, k: Expr };
 type DefContextFrame = { name: string, k: Expr };
-type Program = string[];
+
+type Instr =
+  | { t: '{' }
+  | { t: '}', cid: number }
+  | { t: 'deb', ix: number }
+  | { t: 'call', cid: number }
+  | { t: '→' } // "pop value"
+  | { t: 'type' }
+  ;
+
+type Program = Instr[];
 type EvalContextFrame = StackFrame;
 type State = {
   sig: SigFrame[],
@@ -54,9 +64,22 @@ function replaceWithVar(e: Expr, oldLevel: number, n: number): Expr {
   }
 }
 
+function instrToString(instr: Instr) {
+  switch (instr.t) {
+    case '{': return '{';
+    case '}': return `} (${state.sig[instr.cid].name})`;
+    case 'deb': return `[${instr.ix}]`;
+    case 'call': return `${state.sig[instr.cid].name}`;
+    case '→': return `→`;
+    case 'type': return `type`;
+  }
+}
 
+function progToString(program: Program) {
+  return program.map(instrToString).join(" ");
+}
 function sigFrameToString(frame: SigFrame) {
-  return `${frame.name} : ${exprToString(frame.klass)} [${frame.program.join(" ")}]`;
+  return `${frame.name} : ${exprToString(frame.klass)} [${progToString(frame.program)}]`;
 }
 
 function appToSpine(head: string, spine: Expr[]): string {
@@ -124,17 +147,14 @@ function runProgram(program: Program) {
   let ix = 0;
   while (ix < program.length) {
     const tok = program[ix];
-    switch (tok) {
+    switch (tok.t) {
       case '{': {
         state.ectxs.unshift([]);
       } break;
       case '}': {
         ix++;
         const name = program[ix]; // XXX: risk of running off end of input
-        const cid = state.sig.findIndex(frame => frame.name == name);
-        if (cid == -1) {
-          throw new Error(`const symbol '${name}' not found during close-brace`);
-        }
+        const cid = tok.cid;
         const a = state.stack.pop();
         if (a == undefined) {
           throw new Error(`underflow during close-brace`);
@@ -164,20 +184,12 @@ function runProgram(program: Program) {
         assertEqual(v1.x, v2.k);
         state.ectxs[0].unshift(v2);
       } break;
-      default: {
-        const itok = parseInt(tok);
-        if (!isNaN(itok)) {
-          state.stack.push(state.ectxs[0][itok]);
-        }
-        else {
-          const cid = state.sig.findIndex(frame => frame.name == tok);
-          if (cid != -1) {
-            runProgram(state.sig[cid].program);
-          }
-          else
-            throw new Error(`unknown program instruction ${tok}`);
-        }
-      }
+      case 'deb': {
+        state.stack.push(state.ectxs[0][tok.ix]);
+      } break;
+      case 'call': {
+        runProgram(state.sig[tok.cid].program);
+      } break;
     }
     ix++;
   }
@@ -219,7 +231,7 @@ function interp(input: string[]) {
 
       case '{': {
         state.dctx = [];
-        state.program = ['{'];
+        state.program = [{ t: '{' }];
       } break;
 
       case '}': {
@@ -234,8 +246,7 @@ function interp(input: string[]) {
         if (!(top.k.t == 'type' || top.k.t == 'kind')) {
           throw new Error(`tried to bind non-classifier`);
         }
-        state.program.push('}');
-        state.program.push(name);
+        state.program.push({ t: '}', cid: state.sig.length });
         state.sig.push({ name, klass: absDctx(state.dctx, top.x), program: state.program });
         state.dctx = [];
         state.program = [];
@@ -244,7 +255,7 @@ function interp(input: string[]) {
       } break;
 
       case 'type': {
-        state.program.push('type');
+        state.program.push({ t: 'type' });
         state.stack.push({ x: { t: 'type' }, k: { t: 'kind' } });
       } break;
 
@@ -260,7 +271,7 @@ function interp(input: string[]) {
         if (!(top.k.t == 'type' || top.k.t == 'kind')) {
           throw new Error(`tried to bind non-classifier`);
         }
-        state.program.push('→');
+        state.program.push({ t: '→' });
         state.dctx.push({ name: state.name, k: top.x });
         state.name = '_';
       } break;
@@ -269,14 +280,14 @@ function interp(input: string[]) {
         const vid = state.dctx.findIndex(frame => frame.name == tok);
         if (vid != -1) {
           const ix = state.dctx.length - vid - 1;
-          state.program.push(ix.toString());
+          state.program.push({ t: 'deb', ix });
           state.stack.push({ x: { t: 'appv', head: ix }, k: state.dctx[vid].k });
           break;
         }
         const cid = state.sig.findIndex(frame => frame.name == tok);
         if (cid != -1) {
           // found in signature
-          state.program.push(tok);
+          state.program.push({ t: 'call', cid });
           runProgram(state.sig[cid].program);
           break;
         }
