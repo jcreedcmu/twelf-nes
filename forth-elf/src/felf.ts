@@ -54,6 +54,7 @@ function instrToString(instr: Instr) {
 function progToString(program: Program) {
   return program.map(instrToString).join(" ");
 }
+
 function sigFrameToString(frame: SigFrame) {
   return `${frame.name} : ${exprToString(frame.klass)} [${progToString(frame.program)}]`;
 }
