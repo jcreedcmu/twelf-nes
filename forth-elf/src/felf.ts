@@ -8,7 +8,7 @@ type Expr =
   | { t: 'kind' }
   | { t: 'pi', a: Expr, b: Expr }
   | { t: 'appc', level: number, spine: Expr[] }
-  | { t: 'appv', head: number, spine: Expr[] }
+  | { t: 'appv', head: number }
   ;
 type SigFrame = {
   name: string,
@@ -17,21 +17,22 @@ type SigFrame = {
 };
 
 type StackFrame = { x: Expr, k: Expr };
+type DefContextFrame = { name: string, k: Expr };
 type Program = string[];
 
 type State = {
-  order: number,
   sig: SigFrame[],
   stack: StackFrame[],
+  dctx: DefContextFrame[],
   program: Program,
   name: string,
 }
 
 const state: State = {
-  order: 0,
   sig: [],
   stack: [],
   program: [],
+  dctx: [],
   name: '_',
 };
 
@@ -41,11 +42,11 @@ function replaceWithVar(e: Expr, oldLevel: number, n: number): Expr {
       return { t: 'pi', a: replaceWithVar(e.a, oldLevel, n), b: replaceWithVar(e.b, oldLevel, n + 1) };
     case 'appc':
       if (e.level == oldLevel)
-        return { t: 'appv', head: n, spine: e.spine.map(e => replaceWithVar(e, oldLevel, n)) };
+        return { t: 'appv', head: n };
       else
         return { t: 'appc', level: e.level, spine: e.spine.map(e => replaceWithVar(e, oldLevel, n)) };
     case 'appv':
-      return { t: 'appv', head: e.head, spine: e.spine.map(e => replaceWithVar(e, oldLevel, n)) };
+      return { t: 'appv', head: e.head };
     case 'type': return e;
     case 'kind': return e;
   }
@@ -69,7 +70,7 @@ function exprToString(e: Expr): string {
     case 'kind': return 'Kind';
     case 'pi': return `Pi {_:${exprToString(e.a)}} ${exprToString(e.b)}`;
     case 'appc': return appToSpine(state.sig[e.level].name, e.spine);
-    case 'appv': return appToSpine(`v${e.head}`, e.spine);
+    case 'appv': return `v${e.head}`;
   }
 }
 
@@ -77,14 +78,19 @@ function stackFrameToString(frame: StackFrame) {
   return `${exprToString(frame.x)} : ${exprToString(frame.k)}`;
 }
 
+function dctxFrameToString(frame: DefContextFrame) {
+  return `${frame.name} : ${exprToString(frame.k)}`;
+}
+
 function stateToString(state: State) {
   const STACK = state.stack.map(stackFrameToString).map(x => `    ${x}\n`).join('');
+  const DCTX = state.dctx.map(dctxFrameToString).map(x => `    ${x}\n`).join('');
   const SIG = state.sig.map(sigFrameToString).map(x => `    ${x}\n`).join('');
   return `===
 NAME: ${state.name}
-ORDER: ${state.order}
 STACK:
-${STACK}SIG:
+${STACK}DCTX:
+${DCTX}SIG:
 ${SIG}`;
 }
 
@@ -152,6 +158,13 @@ function doPi() {
   state.stack.push({ x: { t: 'pi', a: frame.klass, b: replaceWithVar(b.x, oldLevel, 0) }, k: b.k });
 }
 
+function absDctx(dctx: DefContextFrame[], e: Expr): Expr {
+  if (dctx.length == 0) {
+    return e;
+  }
+  return { t: 'pi', a: dctx[0].k, b: absDctx(dctx.slice(1), e) };
+}
+
 function interp(input: string[]) {
   let i = 0;
 
@@ -161,18 +174,14 @@ function interp(input: string[]) {
     switch (tok) {
 
       case '{': {
-        state.order = 0;
+        state.dctx = [];
+        state.program = ['{'];
       } break;
 
       case '}': {
         i++;
         const name = input[i]; // XXX: risk of running off end of input
 
-        // gobble up arguments
-        for (let n = 0; n < state.order; n++) {
-          doPi();
-        }
-        state.order = 0;
 
         const top = state.stack.pop();
         if (top == undefined) {
@@ -181,14 +190,18 @@ function interp(input: string[]) {
         if (!(top.k.t == 'type' || top.k.t == 'kind')) {
           throw new Error(`tried to bind non-classifier`);
         }
-
-        state.sig.push({ name, klass: top.x, program: ["+" + name] });
+        state.program.push('}');
+        state.program.push(name);
+        console.log('program would be', state.program.join(" "));
+        state.sig.push({ name, klass: absDctx(state.dctx, top.x), program: ["+" + name] });
+        state.dctx = [];
         state.program = [];
         state.name = '_';
 
       } break;
 
       case 'type': {
+        state.program.push('type');
         state.stack.push({ x: { t: 'type' }, k: { t: 'kind' } });
       } break;
 
@@ -197,7 +210,6 @@ function interp(input: string[]) {
       } break;
 
       case '→': {
-        state.order++;
         const top = state.stack.pop();
         if (top == undefined) {
           throw new Error(`stack underflow`);
@@ -205,18 +217,27 @@ function interp(input: string[]) {
         if (!(top.k.t == 'type' || top.k.t == 'kind')) {
           throw new Error(`tried to bind non-classifier`);
         }
-        state.program.push("+" + state.name);
-
-        state.sig.push({ name: state.name, klass: top.x, program: state.program });
-        state.program = [];
+        state.program.push('→');
+        state.dctx.push({ name: state.name, k: top.x });
         state.name = '_';
       } break;
 
       default: {
+        const vid = state.dctx.findIndex(frame => frame.name == tok);
+        if (vid != -1) {
+          const ix = state.dctx.length - vid - 1;
+          state.program.push(ix.toString());
+          state.stack.push({ x: { t: 'appv', head: ix }, k: state.dctx[vid].k });
+          break;
+        }
         const cid = state.sig.findIndex(frame => frame.name == tok);
-        if (cid == -1) throw new Error(`${tok} not found in signature`);
-        // found in signature
-        runProgram(state.sig[cid].program)
+        if (cid != -1) {
+          // found in signature
+          state.program.push(tok);
+          runProgram(state.sig[cid].program);
+          break;
+        }
+        throw new Error(`${tok} not found`);
       } break;
     }
     i++;
