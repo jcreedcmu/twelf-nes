@@ -27,7 +27,7 @@ type Instr =
   ;
 
 type Program = Instr[];
-type EvalContextFrame = StackFrame;
+
 type State = {
   sig: SigFrame[],
   stack: StackFrame[],
