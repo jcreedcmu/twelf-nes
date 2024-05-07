@@ -20,6 +20,7 @@ type StackFrame = { x: Expr, k: Expr };
 type Program = string[];
 
 type State = {
+  order: number,
   sig: SigFrame[],
   stack: StackFrame[],
   program: Program,
@@ -27,6 +28,7 @@ type State = {
 }
 
 const state: State = {
+  order: 0,
   sig: [],
   stack: [],
   program: [],
@@ -80,6 +82,7 @@ function stateToString(state: State) {
   const SIG = state.sig.map(sigFrameToString).map(x => `    ${x}\n`).join('');
   return `===
 NAME: ${state.name}
+ORDER: ${state.order}
 STACK:
 ${STACK}SIG:
 ${SIG}`;
@@ -138,6 +141,10 @@ function interp(input: string[]) {
     console.log(`got token: ${tok}`);
     switch (tok) {
 
+      case '{': {
+        state.order = 0;
+      } break;
+
       case 'type': {
         state.stack.push({ x: { t: 'type' }, k: { t: 'kind' } });
       } break;
@@ -147,6 +154,7 @@ function interp(input: string[]) {
       } break;
 
       case '→': {
+        state.order++;
         const top = state.stack.pop();
         if (top == undefined) {
           throw new Error(`stack underflow`);
