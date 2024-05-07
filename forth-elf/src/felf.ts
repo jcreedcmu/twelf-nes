@@ -19,7 +19,7 @@ type SigFrame = {
 type StackFrame = { x: Expr, k: Expr };
 type DefContextFrame = { name: string, k: Expr };
 type Program = string[];
-type EvalContextFrame = { x: Expr, k: Expr };
+type EvalContextFrame = StackFrame;
 type State = {
   sig: SigFrame[],
   stack: StackFrame[],
@@ -96,6 +96,27 @@ ${DCTX}SIG:
 ${SIG}`;
 }
 
+function flatten(e: Expr): string[] {
+  switch (e.t) {
+    case 'type': return ['type'];
+    case 'kind': return ['kind'];
+    case 'pi': throw new Error(`Didn't expect to flatten anything but base types!`);
+    case 'appc': {
+      const spine: string[] = e.spine.map(x => flatten(x)).reverse().flatMap(x => x);
+      return [...spine, state.sig[e.cid].name];
+    }
+    case 'appv': throw new Error(`didn't expect to flatten variable applications`);
+  }
+}
+
+function assertEqual(e1: Expr, e2: Expr) {
+  const f1 = flatten(e1).join(" ");
+  const f2 = flatten(e2).join(" ");
+  if (f1 != f2) {
+    throw new Error(`type error ${f1} != ${f2}`);
+  }
+}
+
 function runProgram(program: Program) {
   let ix = 0;
   while (ix < program.length) {
@@ -129,7 +150,16 @@ function runProgram(program: Program) {
         state.stack.push({ x: { t: 'type' }, k: { t: 'kind' } });
       } break;
       case '→': {
-        throw new Error(`unimp`);
+        const v1 = state.stack.pop();
+        if (v1 == undefined) {
+          throw new Error(`underflow during →1`);
+        }
+        const v2 = state.stack.pop();
+        if (v2 == undefined) {
+          throw new Error(`underflow during →2`);
+        }
+        assertEqual(v1.x, v2.k);
+        state.ectxs[0].unshift(v2);
       } break;
       case '+a': {
         state.stack.push({ x: { t: 'appc', cid: 3, spine: [] }, k: { t: 'appc', cid: 0, spine: [] } });
@@ -207,7 +237,7 @@ function absDctx(dctx: DefContextFrame[], e: Expr): Expr {
 }
 
 function allowList(name: string): boolean {
-  return name == 'o' || name == 'k';
+  return name == 'o' || name == 'k' || name == 'd';
 }
 
 function interp(input: string[]) {
