@@ -1,6 +1,6 @@
-{ type } o
-{ o } k
-{ o → o → type } b
-{ o : a → a a b → type } c
-{ o : x → o : y → x y b } q
-{ k k q k c } d
+type : o →
+o : k →
+o → o → type Π Π : b →
+o : a → a a b → type Π Π : c →
+o : x → o : y → x y b Π Π : q →
+k k q k c : d →

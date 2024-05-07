@@ -1,7 +1,6 @@
 {
   "name": "forth-elf",
   "version": "1.0.0",
-  "type": "module",
   "description": "forth-elf",
   "main": "felf.js",
   "scripts": {
@@ -9,5 +8,11 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.10"
+  }
 }
