@@ -133,6 +133,25 @@ function runProgram(program: Program) {
   }
 }
 
+function doPi() {
+  const frame = state.sig.pop();
+  if (frame == undefined) {
+    throw new Error(`signature underflow`);
+  }
+
+  const b = state.stack.pop();
+  if (b == undefined) {
+    throw new Error(`stack underflow`);
+  }
+
+  if (!(b.k.t == 'type' || b.k.t == 'kind')) {
+    throw new Error(`tried to Π non-classifier`);
+  }
+
+  const oldLevel = state.sig.length;
+  state.stack.push({ x: { t: 'pi', a: frame.klass, b: replaceWithVar(b.x, oldLevel, 0) }, k: b.k });
+}
+
 function interp(input: string[]) {
   let i = 0;
 
@@ -149,6 +168,12 @@ function interp(input: string[]) {
         i++;
         const name = input[i]; // XXX: risk of running off end of input
 
+        // gobble up arguments
+        for (let n = 0; n < state.order; n++) {
+          doPi();
+        }
+        state.order = 0;
+
         const top = state.stack.pop();
         if (top == undefined) {
           throw new Error(`stack underflow`);
@@ -161,7 +186,6 @@ function interp(input: string[]) {
         state.program = [];
         state.name = '_';
 
-        state.order = 0;
       } break;
 
       case 'type': {
@@ -186,25 +210,6 @@ function interp(input: string[]) {
         state.sig.push({ name: state.name, klass: top.x, program: state.program });
         state.program = [];
         state.name = '_';
-      } break;
-
-      case 'Π': {
-        const frame = state.sig.pop();
-        if (frame == undefined) {
-          throw new Error(`signature underflow`);
-        }
-
-        const b = state.stack.pop();
-        if (b == undefined) {
-          throw new Error(`stack underflow`);
-        }
-
-        if (!(b.k.t == 'type' || b.k.t == 'kind')) {
-          throw new Error(`tried to Π non-classifier`);
-        }
-
-        const oldLevel = state.sig.length;
-        state.stack.push({ x: { t: 'pi', a: frame.klass, b: replaceWithVar(b.x, oldLevel, 0) }, k: b.k });
       } break;
 
       default: {
