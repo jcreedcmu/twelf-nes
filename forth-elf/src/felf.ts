@@ -1,8 +1,6 @@
 // Prototype of forth-elf typechecker idea
 import * as fs from 'fs';
 
-
-
 type Expr =
   | { t: 'type' }
   | { t: 'kind' }
@@ -43,22 +41,6 @@ const state: State = {
   dctx: [],
   name: '_',
 };
-
-function replaceWithVar(e: Expr, oldLevel: number, n: number): Expr {
-  switch (e.t) {
-    case 'pi':
-      return { t: 'pi', a: replaceWithVar(e.a, oldLevel, n), b: replaceWithVar(e.b, oldLevel, n + 1) };
-    case 'appc':
-      if (e.cid == oldLevel)
-        return { t: 'appv', head: n };
-      else
-        return { t: 'appc', cid: e.cid, spine: e.spine.map(e => replaceWithVar(e, oldLevel, n)) };
-    case 'appv':
-      return { t: 'appv', head: e.head };
-    case 'type': return e;
-    case 'kind': return e;
-  }
-}
 
 function instrToString(instr: Instr) {
   switch (instr.t) {
@@ -180,26 +162,6 @@ function runCid(cid: number) {
   }
   const spine = ectx.map(ec => ec.x).reverse();
   state.stack.push({ x: { t: 'appc', cid, spine }, k: a.x });
-
-}
-
-function doPi() {
-  const frame = state.sig.pop();
-  if (frame == undefined) {
-    throw new Error(`signature underflow`);
-  }
-
-  const b = state.stack.pop();
-  if (b == undefined) {
-    throw new Error(`stack underflow`);
-  }
-
-  if (!(b.k.t == 'type' || b.k.t == 'kind')) {
-    throw new Error(`tried to Π non-classifier`);
-  }
-
-  const oldLevel = state.sig.length;
-  state.stack.push({ x: { t: 'pi', a: frame.klass, b: replaceWithVar(b.x, oldLevel, 0) }, k: b.k });
 }
 
 function absDctx(dctx: DefContextFrame[], e: Expr): Expr {
