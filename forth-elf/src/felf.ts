@@ -20,8 +20,6 @@ type StackFrame = { x: Expr, k: Expr };
 type DefContextFrame = { name: string, k: Expr };
 
 type Instr =
-  | { t: '{' }
-  | { t: '}', cid: number }
   | { t: 'deb', ix: number }
   | { t: 'call', cid: number }
   | { t: '→' } // "pop value"
@@ -66,8 +64,6 @@ function replaceWithVar(e: Expr, oldLevel: number, n: number): Expr {
 
 function instrToString(instr: Instr) {
   switch (instr.t) {
-    case '{': return '{';
-    case '}': return `} (${state.sig[instr.cid].name})`;
     case 'deb': return `[${instr.ix}]`;
     case 'call': return `${state.sig[instr.cid].name}`;
     case '→': return `→`;
@@ -143,32 +139,12 @@ function assertEqual(e1: Expr, e2: Expr) {
   }
 }
 
-function runProgram(program: Program) {
-  let ix = 0;
-  while (ix < program.length) {
-    const tok = program[ix];
+function runCid(cid: number) {
+  const program = state.sig[cid].program;
+  state.ectxs.unshift([]);
+
+  for (const tok of program) {
     switch (tok.t) {
-      case '{': {
-        state.ectxs.unshift([]);
-      } break;
-      case '}': {
-        ix++;
-        const name = program[ix]; // XXX: risk of running off end of input
-        const cid = tok.cid;
-        const a = state.stack.pop();
-        if (a == undefined) {
-          throw new Error(`underflow during close-brace`);
-        }
-        if (!(a.k.t == 'type' || a.k.t == 'kind')) {
-          throw new Error(`tried to close-brace non-classifier '${JSON.stringify(a)}'`);
-        }
-        const ectx = state.ectxs.shift();
-        if (ectx == undefined) {
-          throw new Error(`underflow during close-brace ectx pop`);
-        }
-        const spine = ectx.map(ec => ec.x).reverse();
-        state.stack.push({ x: { t: 'appc', cid, spine }, k: a.x });
-      } break;
       case 'type': {
         state.stack.push({ x: { t: 'type' }, k: { t: 'kind' } });
       } break;
@@ -188,11 +164,25 @@ function runProgram(program: Program) {
         state.stack.push(state.ectxs[0][tok.ix]);
       } break;
       case 'call': {
-        runProgram(state.sig[tok.cid].program);
+        runCid(tok.cid);
       } break;
     }
-    ix++;
   }
+
+  const a = state.stack.pop();
+  if (a == undefined) {
+    throw new Error(`underflow during close-brace`);
+  }
+  if (!(a.k.t == 'type' || a.k.t == 'kind')) {
+    throw new Error(`tried to close-brace non-classifier '${JSON.stringify(a)}'`);
+  }
+  const ectx = state.ectxs.shift();
+  if (ectx == undefined) {
+    throw new Error(`underflow during close-brace ectx pop`);
+  }
+  const spine = ectx.map(ec => ec.x).reverse();
+  state.stack.push({ x: { t: 'appc', cid, spine }, k: a.x });
+
 }
 
 function doPi() {
@@ -231,14 +221,12 @@ function interp(input: string[]) {
 
       case '{': {
         state.dctx = [];
-        state.program = [{ t: '{' }];
+        state.program = [];
       } break;
 
       case '}': {
         i++;
         const name = input[i]; // XXX: risk of running off end of input
-
-
         const top = state.stack.pop();
         if (top == undefined) {
           throw new Error(`stack underflow`);
@@ -246,12 +234,10 @@ function interp(input: string[]) {
         if (!(top.k.t == 'type' || top.k.t == 'kind')) {
           throw new Error(`tried to bind non-classifier`);
         }
-        state.program.push({ t: '}', cid: state.sig.length });
         state.sig.push({ name, klass: absDctx(state.dctx, top.x), program: state.program });
         state.dctx = [];
         state.program = [];
         state.name = '_';
-
       } break;
 
       case 'type': {
@@ -288,7 +274,7 @@ function interp(input: string[]) {
         if (cid != -1) {
           // found in signature
           state.program.push({ t: 'call', cid });
-          runProgram(state.sig[cid].program);
+          runCid(cid);
           break;
         }
         throw new Error(`${tok} not found`);
