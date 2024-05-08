@@ -126,3 +126,13 @@ and ":" mean "add to signature"?
     o ; x → o ; y → x y b : q
     k k q k c : d
 ```
+
+Lambda Syntax?
+--------------
+
+How might I represent higher-order terms? Maybe `[` does weakening (i.e. pushes a variable into the context)
+and `]` effects the λR rule.
+```
+  a : x [ b : y [ y x k ] ]
+```
+would be λ(x:a)λ(y:b).k x y.
