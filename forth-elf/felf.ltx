@@ -1,0 +1,138 @@
+\documentclass{article}
+\input{linear}
+\usepackage[tmargin=0.15in, bmargin=0.15in]{geometry}
+\input{prooftree}
+% \usepackage{stmaryrd}
+% \usepackage{latexsym}
+% \usepackage{amsmath}
+
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+
+\def\cn{{:}}
+\def\tr{{\triangleright}}
+\def\bu{\bullet}
+\def\rtype{\mathsf{type}}
+\def\rkind{\mathsf{kind}}
+
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true}
+\title{A Concatenative Typechecker for LF}
+\author{Jason Reed}
+
+\begin{document}
+\maketitle
+\section{Introduction}
+
+\section{Language}
+\[
+\begin{tabular}{lcl}
+ Signature& $\Sigma$&$\cdot  \celse \Sigma, c : A$\\
+ Context& $\Gamma$&$\cdot \celse \Gamma, x : A$\\
+ Stack& $\Delta$&$\cdot  \celse \Gamma, M : A$\\
+ Program& $P$&$\cdot  \celse P, \iota$\\
+ Instruction& $\iota$&$c \celse x \celse \Pi \celse \lambda \celse \tr_x \celse \bu_c \celse \rtype$\\
+\end{tabular} \]
+
+We aim to define the judgment
+ \[(\Sigma/ \Gamma/ \Delta) + \iota = (\Sigma'/ \Gamma'/ \Delta')\]
+by the rules
+\[
+\begin{prooftree}
+\justifies
+(\Sigma/ \Gamma/ \Delta) + \rtype = (\Sigma, \rtype: \rkind/ \Gamma/ \Delta)
+\end{prooftree}
+\]
+
+\[
+\begin{prooftree}
+c : o \in \Sigma
+\justifies
+(\Sigma/ \Gamma/ \Delta) + c = (\Sigma / \Gamma/ \Delta, c : o)
+\end{prooftree}
+\]
+
+\[
+\begin{prooftree}
+x : o \in \Gamma
+\justifies
+(\Sigma/ \Gamma/ \Delta) + x = (\Sigma / \Gamma/ \Delta, x : o)
+\end{prooftree}
+\]
+
+\[
+\begin{prooftree}
+\justifies
+(\Sigma/ \Gamma, x : A/ \Delta, B : \rtype) + \Pi = (\Sigma / \Gamma/ \Delta, (\Pi x \cn A . B) : \rtype)
+\end{prooftree}
+\]
+
+\[
+\begin{prooftree}
+\justifies
+(\Sigma/ \Gamma, x : A/ \Delta, M : B) + \lambda = (\Sigma / \Gamma/ \Delta, (\lambda x \cn A . M) : (\Pi x \cn A . B))
+\end{prooftree}
+\]
+
+\[
+\begin{prooftree}
+\justifies
+(\Sigma/ \Gamma/ \Delta, A : \rtype) + \tr_x = (\Sigma / \Gamma, x : A/ \Delta)
+\end{prooftree}
+\]
+
+\[
+\begin{prooftree}
+\justifies
+(\Sigma/ \Gamma/ \Delta, A : \rtype) + \bu_c = (\Sigma, c : A / \Gamma/ \Delta)
+\end{prooftree}
+\]
+
+%% o : type.
+%% k : o.
+%% l : o.
+%% s : o -> o.
+%% a : o -> type.
+%% b : o -> o -> type.
+%% bt : b k (s l).
+%% bt2 : {x:o} b x x.
+%% c : (o -> o) -> type.
+%% d : {x:o} a (s x) -> type.
+%% e : {x:o} {y:o} b y (s x) -> type.
+%% et: e l k bt.
+%% et2 : e k (s k) (bt2 (s k)).
+%% ct : c ([x] s (s x)).
+%% h : ((o -> o) -> o) -> type.
+%% ht : h ([f] f (s k)).
+
+\subsection{Examples}
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+$o : \rtype$ & $\mathtt{type\ \bu_o}$\\
+$k : o$ & $\mathtt{o\ \bu_k}$\\
+$\ell : o$ & $\mathtt{o\ \bu_\ell}$\\
+$s : o \to o$ & $\mathtt{o\ \tr\ o\ \Pi\ \bu_s}$\\
+$a : o \to \rtype$ & $\mathtt{o\ \tr\ type\ \Pi\ \bu_a}$\\
+$b : o \to o \to \rtype$ & $\mathtt{o\ \tr\ o\ \tr\ type\ \Pi\ \Pi\ \bu_b}$\\
+$bt : b\ k\ (s\ \ell)$ & $\mathtt{\ell\ s\ k \ b\ \bu_{bt}}$\\
+$bt2 : \{x : o\}\ b\ x\ x$ & $\mathtt{o\ \tr_x\ x\ x\ b\ \Pi\ \bu_{bt2}}$\\
+$c : (o \to o) \to \rtype$ & $\mathtt{o\ \tr\ o\ \Pi\ \tr\ type\ \Pi\ \bu_c}$\\
+$d : \{x : o\}\ a\ (s\ x) \to \rtype$ & $\mathtt{o\ \tr_x\ x\ s\ a\ \tr\ \Pi\ \Pi\ \bu_d }$\\
+$e : \{x : o\}\{y : o\}\ b\ y\ (s\ x) \to \rtype$ & $\mathtt{o\ \tr_x\ o\ \tr_y\ x\ s\ y\ b\ \tr\ \Pi\ \Pi\ \Pi\ \bu_e }$\\
+$et : e\ \ell\ k\ bt$ & $\mathtt{bt\ k\ \ell\ e\ \bu_{et} }$\\
+$et2 : e\ k\ (s\ k)\ (bt2\ (s\ k))$ & $\mathtt{k\ s\ bt2\ k\ s\ k\ e\ \bu_{et2}}$\\
+$ct : c\ (\lambda x . s\ (s\ x))$ & $\mathtt{o\ \tr_x\ s\ s\ \lambda\ c\  \bu_{ct}}$\\
+$h : ((o \to o) \to o) \to \rtype$ & $\mathtt{o\ \tr\ o\ \Pi\ \tr\ o\ \Pi\ \tr\ type\ \bu_h}$\\
+$ht : h\ (\lambda (f\cn o\to o) . f\ (s\ k))$ & $\mathtt{o\ \tr\ o\ \Pi\ \tr_f\ k\ s\ f\ \lambda\ h\  \bu_{ht}}$\\
+\hline
+\end{tabular}\]
+}
+
+Why don't I do something like represent
+$b : o \to o \to \rtype$ as
+\[\mathtt{ type\ o\ \tr\ \Pi\ o\ \tr\ \Pi\ \bu_b}\]
+instead, and perhaps even fuse the $\tr$ and $\Pi$ into a single operation?
+Because although this works in this nondependent case, I might need to use the $\Pi$-bound variables
+in the body of the $\Pi$, so they must come first.
+
+\end{document}
