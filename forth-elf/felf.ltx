@@ -10,6 +10,9 @@
 
 \def\L{\texttt{(}}
 \def\R{\texttt{)}}
+\def\Lb{\texttt{[}}
+\def\Rb{\texttt{]}}
+
 \def\make{\rightsquigarrow}
 \def\cn{{:}}
 \def\tr{{\triangleright}}
@@ -197,8 +200,8 @@ I think I want `execution' of a constant to reuse the same program
 that was used to build up its declaration. For this to work, I need to
 know which $\tr$ are part of the main spine of that constant, and
 which are nested in its arguments. When I have $\Pi$s belatedly telling me how to build up the spine,
-this information is buried. I think I might want to have explicit $\{\ \}$ instructions giving scopes
-after all. So let's try:
+this information is buried. I think I might want to have explicit $\L$ and $\R$ instructions giving $\Pi$ scopes
+and I guess $\Lb$ and $\Rb$ for $\lambda$ scopes after all. So let's try:
 \subsection{Examples}
 {\renewcommand{\arraystretch}{1.2}
 \[\begin{tabular}{l|l}
@@ -218,9 +221,9 @@ $d : \{x : o\}\ a\ (s\ x) \to \rtype$ & $\mathtt{\L\ o\ \tr_x\ x\ s\ a\ \tr\ typ
 $e : \{x : o\}\{y : o\}\ b\ y\ (s\ x) \to \rtype$ & $\mathtt{\L\ o\ \tr_x\ o\ \tr_y\ x\ s\ y\ b\ \tr\ type\ \R\ \bu_e }$\\
 $et : e\ \ell\ k\ bt$ & $\mathtt{\L\ bt\ k\ \ell\ e\ \R\ \bu_{et} }$\\
 $et2 : e\ k\ (s\ k)\ (bt2\ (s\ k))$ & $\mathtt{\L\ k\ s\ bt2\ k\ s\ k\ e\ \R\ \bu_{et2}}$\\
-$ct : c\ (\lambda x . s\ (s\ x))$ & $\mathtt{\L\ o\ \tr_x\ s\ s\ \lambda\ c\  \R\ \bu_{ct}}$\\
+$ct : c\ (\lambda x . s\ (s\ x))$ & $\mathtt{\L\ \Lb\ o\ \tr_x\ x\ s\ s\ \Rb\ c\  \R\ \bu_{ct}}$\\
 $h : ((o \to o) \to o) \to \rtype$ & $\mathtt{\L\ \L\ \L\ o\ \tr\ o\ \R\ \tr\ o\ \R\ \tr\ type\ \R\ \bu_h}$\\
-$ht : h\ (\lambda (f\cn o\to o) . f\ (s\ k))$ & $\mathtt{\L\ \L\ o\ \tr\ o\ \R\ \tr_f\ k\ s\ f\ \lambda\ h\  \R\ \bu_{ht}}$\\
+$ht : h\ (\lambda (f\cn o\to o) . f\ (s\ k))$ & $\mathtt{\L\ \Lb\ \L\ o\ \tr\ o\ \R\ \tr_f\ k\ s\ f\ \Rb \ h\  \R\ \bu_{ht}}$\\
 \hline
 \end{tabular}\]
 }
