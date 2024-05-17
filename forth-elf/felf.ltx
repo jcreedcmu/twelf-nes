@@ -8,6 +8,8 @@
 
 % \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 
+\def\L{\texttt{(}}
+\def\R{\texttt{)}}
 \def\make{\rightsquigarrow}
 \def\cn{{:}}
 \def\tr{{\triangleright}}
@@ -31,14 +33,13 @@
  Context& $\Gamma$&$\cdot \celse \Gamma, x : A : Q$\\
  Stack& $\Delta$&$\cdot  \celse \Gamma, M : A$\\
  Program& $P$&$\cdot  \celse P, \iota$\\
- Interactive
  Instruction& $\iota$&$c \celse \underline n \celse \Pi \celse \lambda \celse \tr \celse \bu_c \celse \rtype$\\
- Compiled Program& $Q$&$\cdot  \celse Q, \theta$\\
- Compiled
- Instruction& $\theta$&\\
+ %% Compiled Program& $Q$&$\cdot  \celse Q, \theta$\\
+ %% Compiled
+ %% Instruction& $\theta$&\\
 \end{tabular} \]
 
-Every constant $c$ we put into the signature induces a program based on its type.
+Every instruction can be interpreted in two ways. The ``interactive'' interpretation is:
 
 \[
 {\renewcommand{\arraystretch}{1.2}
@@ -57,8 +58,25 @@ $\rtype$&Push $\rtype : \rkind$ to $\Delta$\\
 \end{tabular}
 }
 \]
-We need to define a judgment $c : A \make P$ that tells us how to compile constants at a type to a
-program.
+
+The ``compiled'' interpretation is:
+\[
+{\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{ll}
+\hline
+$a$&run $a$ in compiled mode\\
+$c$&run $c$ in compiled mode\\
+$\underline n$&run $\underline n$ in compiled mode\\
+$\Pi$&Pop $M:A$,$A':\rtype$ from $\Delta$, check $A = A'$. \\
+$\lambda$&?\\
+$\bu_c$&Pop $A:\rtype$ from $\Delta$, push $c : A$ to $\Sigma$\\
+$\bu_a$&Pop $K:\rkind$ from $\Delta$, push $a : K$ to $\Sigma$\\
+$\rtype$&Push $\rtype : \rkind$ to $\Delta$\\
+\hline
+\end{tabular}
+}
+\]
+
 \section{Named Language}
 \[
 \begin{tabular}{lc@{$\quad::=\quad$}l}
@@ -173,4 +191,37 @@ instead, and perhaps even fuse the $\tr$ and $\Pi$ into a single operation?
 Because although this works in this nondependent case, I might need to use the $\Pi$-bound variables
 in the body of the $\Pi$, so they must come first.
 
+\section{Why not $\Pi$}
+
+I think I want `execution' of a constant to reuse the same program
+that was used to build up its declaration. For this to work, I need to
+know which $\tr$ are part of the main spine of that constant, and
+which are nested in its arguments. When I have $\Pi$s belatedly telling me how to build up the spine,
+this information is buried. I think I might want to have explicit $\{\ \}$ instructions giving scopes
+after all. So let's try:
+\subsection{Examples}
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+term & representation \\
+\hline
+$o : \rtype$ & $\mathtt{\L\ type\ \R\ \bu_o}$\\
+$k : o$ & $\mathtt{\L\ o\ \R\ \bu_k}$\\
+$\ell : o$ & $\mathtt{\L\ o\ \R\ \bu_\ell}$\\
+$s : o \to o$ & $\mathtt{\L\ o\ \tr\ o\ \R\ \bu_s}$\\
+$a : o \to \rtype$ & $\mathtt{\L\ o\ \tr\ type\ \R\ \bu_a}$\\
+$b : o \to o \to \rtype$ & $\mathtt{\L\ o\ \tr\ o\ \tr\ type\ \R\ \bu_b}$\\
+$bt : b\ k\ (s\ \ell)$ & $\mathtt{\L\ \ell\ s\ k \ b\ \R\ \bu_{bt}}$\\
+$bt2 : \{x : o\}\ b\ x\ x$ & $\mathtt{\L\ o\ \tr_x\ x\ x\ b\ \R\ \bu_{bt2}}$\\
+$c : (o \to o) \to \rtype$ & $\mathtt{\L\ \L\ o\ \tr\ o\ \R\ \tr\ type\ \R\ \bu_c}$\\
+$d : \{x : o\}\ a\ (s\ x) \to \rtype$ & $\mathtt{\L\ o\ \tr_x\ x\ s\ a\ \tr\ type\ \R\ \bu_d }$\\
+$e : \{x : o\}\{y : o\}\ b\ y\ (s\ x) \to \rtype$ & $\mathtt{\L\ o\ \tr_x\ o\ \tr_y\ x\ s\ y\ b\ \tr\ type\ \R\ \bu_e }$\\
+$et : e\ \ell\ k\ bt$ & $\mathtt{\L\ bt\ k\ \ell\ e\ \R\ \bu_{et} }$\\
+$et2 : e\ k\ (s\ k)\ (bt2\ (s\ k))$ & $\mathtt{\L\ k\ s\ bt2\ k\ s\ k\ e\ \R\ \bu_{et2}}$\\
+$ct : c\ (\lambda x . s\ (s\ x))$ & $\mathtt{\L\ o\ \tr_x\ s\ s\ \lambda\ c\  \R\ \bu_{ct}}$\\
+$h : ((o \to o) \to o) \to \rtype$ & $\mathtt{\L\ \L\ \L\ o\ \tr\ o\ \R\ \tr\ o\ \R\ \tr\ type\ \R\ \bu_h}$\\
+$ht : h\ (\lambda (f\cn o\to o) . f\ (s\ k))$ & $\mathtt{\L\ \L\ o\ \tr\ o\ \R\ \tr_f\ k\ s\ f\ \lambda\ h\  \R\ \bu_{ht}}$\\
+\hline
+\end{tabular}\]
+}
 \end{document}
