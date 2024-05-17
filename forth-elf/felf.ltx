@@ -6,8 +6,9 @@
 % \usepackage{latexsym}
 % \usepackage{amsmath}
 
-\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+% \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 
+\def\make{\rightsquigarrow}
 \def\cn{{:}}
 \def\tr{{\triangleright}}
 \def\bu{\bullet}
@@ -23,9 +24,44 @@
 \maketitle
 \section{Introduction}
 
-\section{Language}
+\section{deBruijn Language}
 \[
-\begin{tabular}{lcl}
+\begin{tabular}{lc@{$\quad::=\quad$}l}
+ Signature& $\Sigma$&$\cdot  \celse \Sigma, c : A : Q$\\
+ Context& $\Gamma$&$\cdot \celse \Gamma, x : A : Q$\\
+ Stack& $\Delta$&$\cdot  \celse \Gamma, M : A$\\
+ Program& $P$&$\cdot  \celse P, \iota$\\
+ Interactive
+ Instruction& $\iota$&$c \celse \underline n \celse \Pi \celse \lambda \celse \tr \celse \bu_c \celse \rtype$\\
+ Compiled Program& $Q$&$\cdot  \celse Q, \theta$\\
+ Compiled
+ Instruction& $\theta$&\\
+\end{tabular} \]
+
+Every constant $c$ we put into the signature induces a program based on its type.
+
+\[
+{\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{ll}
+\hline
+$a$&Pop arguments $S$ off $\Delta$, typecheck them, push $a \cdot S : \rtype$\\
+$c$&Pop arguments $S$ off $\Delta$, typecheck them, push $c\cdot S : B$\\
+$\underline n$&Pop arguments $S$ off $\Delta$, typecheck them, push $\underline n \cdot S : B$\\
+$\Pi$&Pop $x:A$ from $\Gamma$, pop $B:\rtype$ from $\Delta$, push $\Pi x\cn A . B  : \rtype$ to $\Delta$\\
+$\Pi$&Pop $x:A$ from $\Gamma$, pop $K:\rkind$ from $\Delta$, push $\Pi x\cn A . K : \rkind$ to $\Delta$\\
+$\lambda$&Pop $x:A$ from $\Gamma$, pop $M:B$ from $\Delta$, push $\lambda x\cn A . B$ to $\Delta$\\
+$\bu_c$&Pop $A:\rtype$ from $\Delta$, push $c : A$ to $\Sigma$\\
+$\bu_a$&Pop $K:\rkind$ from $\Delta$, push $a : K$ to $\Sigma$\\
+$\rtype$&Push $\rtype : \rkind$ to $\Delta$\\
+\hline
+\end{tabular}
+}
+\]
+We need to define a judgment $c : A \make P$ that tells us how to compile constants at a type to a
+program.
+\section{Named Language}
+\[
+\begin{tabular}{lc@{$\quad::=\quad$}l}
  Signature& $\Sigma$&$\cdot  \celse \Sigma, c : A$\\
  Context& $\Gamma$&$\cdot \celse \Gamma, x : A$\\
  Stack& $\Delta$&$\cdot  \celse \Gamma, M : A$\\
@@ -107,6 +143,8 @@ x : o \in \Gamma
 \subsection{Examples}
 {\renewcommand{\arraystretch}{1.2}
 \[\begin{tabular}{l|l}
+\hline
+term & representation \\
 \hline
 $o : \rtype$ & $\mathtt{type\ \bu_o}$\\
 $k : o$ & $\mathtt{o\ \bu_k}$\\
