@@ -37,7 +37,7 @@ type CtlEntry = {
 
 
 type StackEntry = {
-
+  term: string,
 };
 
 type Sig = SigEntry[];
@@ -55,6 +55,7 @@ export type State = {
   ctl: Ctl,
   stack: Stack,
   toks: Toks,
+  error: boolean,
 }
 
 export function mkState(toks: Toks): State {
@@ -66,6 +67,7 @@ export function mkState(toks: Toks): State {
     sig: [],
     stack: [],
     toks,
+    error: false,
   }
 }
 
@@ -87,10 +89,17 @@ function stringOfToks(state: State): string {
 }
 
 export function stringOfState(state: State): string {
-  return `${stringOfToks(state)}
-{bold}sig{/bold}:
+  let stateRepn: string;
+  if (state.error) {
+    stateRepn = `{bold}{red-fg}ERROR{/}`;
+  }
+  else {
+    stateRepn = `{bold}sig{/bold}:
 {bold}stack{/bold}: foo
 `
+  }
+  return `${stringOfToks(state)}\n${stateRepn}`;
+
 }
 
 export function parse(input: string): Tok[] {
@@ -118,10 +127,24 @@ export function parse(input: string): Tok[] {
   return out;
 }
 
+function execInstruction(state: State, inst: Tok): State {
+  switch (inst.t) {
+    case 'type': return produce(state, s => {
+      s.stack.push({ term: 'type' });
+    });
+    default: return produce(state, s => {
+      s.error = true;
+    });
+  }
+}
+
 export function stepForward(state: State): State | undefined {
-  const state2 = produce(state, s => { s.pc++; });
-  if (state2.pc >= state2.toks.length) return undefined;
-  return state2;
+  if (state.error)
+    return undefined;
+  state = execInstruction(state, state.toks[state.pc]);
+  state = produce(state, s => { s.pc++; });
+  if (state.pc >= state.toks.length) return undefined;
+  return state;
 }
 
 export function run(state: State): State[] {
