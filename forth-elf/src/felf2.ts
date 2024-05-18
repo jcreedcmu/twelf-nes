@@ -31,7 +31,7 @@ screen.key(['escape', 'q', 'C-c'], (ch, key) => {
 });
 
 const input = `
-type : o.
+type : o .
 o : k .
 o : l .
 ( o > o ) : s .

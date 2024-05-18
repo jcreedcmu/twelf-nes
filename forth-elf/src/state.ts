@@ -1,5 +1,29 @@
 import { produce } from 'immer';
 
+type Expr =
+  | { t: 'type' }
+  | { t: 'kind' }
+  | { t: 'pi', a: Expr, b: Expr }
+  | { t: 'appc', cid: string, spine: Expr[] }
+  | { t: 'appv', head: string, spine: Expr[] }
+
+function appToSpine(head: string, spine: Expr[]): string {
+  if (spine.length == 0)
+    return head;
+  else
+    return `${head}·(${spine.map(exprToString).join(",")})`;
+}
+
+function exprToString(e: Expr): string {
+  switch (e.t) {
+    case 'type': return 'Type';
+    case 'kind': return 'Kind';
+    case 'pi': return `Pi {_:${exprToString(e.a)}} ${exprToString(e.b)}`;
+    case 'appc': return appToSpine(e.cid, e.spine);
+    case 'appv': return appToSpine(e.head, e.spine);
+  }
+}
+
 type Tok =
   | { t: 'type' }
   | { t: '>', name: string | undefined }
@@ -17,12 +41,13 @@ type PosTok = { tok: Tok, range: Range };
 
 type SigEntry = {
   name: string,
-  range: Range,
+  klass: Expr,
+  range: Rng,
 };
 
 type CtxEntry = {
   name: string,
-  range: Range,
+  range: Rng,
 };
 
 
@@ -37,7 +62,8 @@ type CtlEntry = {
 
 
 type StackEntry = {
-  term: string,
+  term: Expr,
+  klass: Expr
 };
 
 type Sig = SigEntry[];
@@ -55,7 +81,7 @@ export type State = {
   ctl: Ctl,
   stack: Stack,
   toks: Toks,
-  error: boolean,
+  error: string | undefined,
 }
 
 export function mkState(toks: Toks): State {
@@ -67,7 +93,7 @@ export function mkState(toks: Toks): State {
     sig: [],
     stack: [],
     toks,
-    error: false,
+    error: undefined,
   }
 }
 
@@ -88,18 +114,29 @@ function stringOfToks(state: State): string {
   return state.toks.map(stringOfTok).map((x, i) => i == state.pc ? `{#0fffff-bg}${x}{/}` : x).join(' ');
 }
 
+function stringOfSig(sig: Sig): string {
+  return sig.map(e => {
+    return `${e.name} : ${exprToString(e.klass)}`;
+  }).join(', ');
+}
+
+function stringOfStack(stack: Stack): string {
+  return stack.map(e => {
+    return `${exprToString(e.term)} : ${exprToString(e.klass)}`;
+  }).join(', ');
+}
+
 export function stringOfState(state: State): string {
   let stateRepn: string;
-  if (state.error) {
-    stateRepn = `{bold}{red-fg}ERROR{/}`;
+  if (state.error != undefined) {
+    stateRepn = `{bold}{red-fg}ERROR: ${state.error}{/}`;
   }
   else {
-    stateRepn = `{bold}sig{/bold}:
-{bold}stack{/bold}: foo
-`
+    stateRepn = `{white-fg}sig:{/} ${stringOfSig(state.sig)}
+{white-fg}stack:{/} ${stringOfStack(state.stack)}
+`;
   }
   return `${stringOfToks(state)}\n${stateRepn}`;
-
 }
 
 export function parse(input: string): Tok[] {
@@ -127,13 +164,41 @@ export function parse(input: string): Tok[] {
   return out;
 }
 
+function popStack(state: State): undefined | { elt: StackEntry, newState: State } {
+  if (state.stack.length == 0)
+    return undefined;
+  const elt = state.stack.at(-1)!;
+  const newState = produce(state, s => {
+    s.stack.pop();
+  });
+  return { elt, newState };
+}
+
 function execInstruction(state: State, inst: Tok): State {
   switch (inst.t) {
     case 'type': return produce(state, s => {
-      s.stack.push({ term: 'type' });
+      s.stack.push({ term: { t: 'type' }, klass: { t: 'kind' } });
     });
+
+    case '.': {
+      const popResult = popStack(state);
+      if (popResult == undefined)
+        return produce(state, s => { s.error = `stack underflow during .`; });
+      const { elt, newState } = popResult;
+      if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
+        return produce(state, s => { s.error = `expected classifier on stack during .`; });
+      }
+      return produce(newState, s => {
+        s.sig.push({
+          name: inst.name ?? '_',
+          range: { first: 0, last: 1 },
+          klass: elt.term,
+        });
+      });
+    }
+
     default: return produce(state, s => {
-      s.error = true;
+      s.error = `unimplemented instruction ${inst.t}`;
     });
   }
 }

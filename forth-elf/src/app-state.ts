@@ -15,7 +15,7 @@ export function mkAppState(input: string): AppState {
 }
 
 export function stringOfAppState(app: AppState): string {
-  return `{bold}time{/bold}: ${app.frame}
+  return `{white-fg}time:{/} ${app.frame}
 ${stringOfState(app.states[app.frame])}`;
 }
 
