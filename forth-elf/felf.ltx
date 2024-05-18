@@ -1,6 +1,6 @@
 \documentclass{article}
 \input{linear}
-\usepackage[tmargin=0.15in, bmargin=0.15in]{geometry}
+% \usepackage[tmargin=0.15in, bmargin=0.15in]{geometry}
 \input{prooftree}
 % \usepackage{stmaryrd}
 % \usepackage{latexsym}
@@ -227,4 +227,19 @@ $ht : h\ (\lambda (f\cn o\to o) . f\ (s\ k))$ & $\mathtt{\L\ \Lb\ \L\ o\ \tr\ o\
 \hline
 \end{tabular}\]
 }
+
+\[
+{\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{ll}
+\hline
+$\mathtt c$&Set $\rho =\texttt{tt}$, run program for $c$\\
+$\L$&Push $()_\rho$ to $\Gamma$\\
+$\R$&Pop $A:\rtype$ from $\Delta$, $(\gamma)_\rho$ from $\Gamma$, push $\Pi \gamma . A$ to $\Delta$\\
+$\tr_x[\gamma_\rho = \texttt{ff}]$&Pop $A: \rtype$ from $\Delta$, push $x:A$ to $\Gamma$\\
+$\bu_c[\rho = \texttt{ff}]$&Pop $A:\rtype$ from $\Delta$, push $c : A$ to $\Sigma$\\
+$\rtype$&Push $\rtype : \rkind$ to $\Delta$\\
+\hline
+\end{tabular}
+}
+\]
 \end{document}
