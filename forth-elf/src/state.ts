@@ -197,6 +197,20 @@ function execInstruction(state: State, inst: Tok): State {
       });
     }
 
+    case 'id': {
+      switch (inst.name) {
+        case 'o':
+          return produce(state, s => {
+            s.stack.push({
+              term: { t: 'appc', cid: 'o', spine: [] },
+              klass: { t: 'type' }
+            });
+          });
+        default: return produce(state, s => {
+          s.error = `unimplemented identifier ${inst.name}`;
+        });
+      }
+    }
     default: return produce(state, s => {
       s.error = `unimplemented instruction ${inst.t}`;
     });
