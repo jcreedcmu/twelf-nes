@@ -233,10 +233,13 @@ $ht : h\ (\lambda (f\cn o\to o) . f\ (s\ k))$ & $\mathtt{\L\ \Lb\ \L\ o\ \tr\ o\
 \begin{tabular}{ll}
 \hline
 $\mathtt c$&Set $\rho =\texttt{tt}$, run program for $c$\\
-$\L$&Push $()_\rho$ to $\Gamma$\\
+$\L[\rho = \texttt{ff}]$&Push $\gamma = ()$ to $\Gamma$\\
+$\L[\rho = \texttt{tt}]$&Push $\theta = \cdot$ to $\Gamma$, set $\rho = \texttt{ff}$\\
 $\R$&Pop $A:\rtype$ from $\Delta$, $(\gamma)_\rho$ from $\Gamma$, push $\Pi \gamma . A$ to $\Delta$\\
-$\tr_x[\gamma_\rho = \texttt{ff}]$&Pop $A: \rtype$ from $\Delta$, push $x:A$ to $\Gamma$\\
+$\tr_x[(\Gamma, \gamma)]$&Pop $A: \rtype$ from $\Delta$, push $x:A$ to $\gamma$\\
 $\bu_c[\rho = \texttt{ff}]$&Pop $A:\rtype$ from $\Delta$, push $c : A$ to $\Sigma$\\
+$\tr_x[(\Gamma, \theta)]$&Pop $M:A, A': \rtype$ from $\Delta$, check $A = A'$, push $M/x:A$ to $\theta$\\
+$\bu_c[\rho = \texttt{tt}]$&Pop $S$ from $\Gamma$, push $c\cdot S : A$ to $\Delta$\\
 $\rtype$&Push $\rtype : \rkind$ to $\Delta$\\
 \hline
 \end{tabular}

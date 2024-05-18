@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/blessed": "^0.1.25",
+    "blessed": "^0.1.81",
     "typescript": "^5.4.5"
   },
   "devDependencies": {
