@@ -46,7 +46,8 @@ type SigEntry = {
 };
 
 type CtxEntry = {
-  name: string,
+  name: string | undefined,
+  klass: Expr,
   range: Rng,
 };
 
@@ -126,6 +127,27 @@ function stringOfStack(stack: Stack): string {
   }).join(', ');
 }
 
+function stringOfSubEntry(e: CtxEntry): string {
+  return `${e.name ?? '_'}:${exprToString(e.klass)}`;
+}
+
+function stringOfCtxEntry(e: CtxEntry): string {
+  return `${e.name ?? '_'}:${exprToString(e.klass)}`;
+}
+
+function stringOfCtx(meta: MetaCtxEntry): string {
+  switch (meta.t) {
+    case 'sub': return meta.sub.map(stringOfSubEntry).join(', ');
+    case 'ctx': return meta.ctx.map(stringOfCtxEntry).join(', ');
+  }
+}
+
+function stringOfMeta(meta: MetaCtx): string {
+  return meta.map(e => {
+    return `(${stringOfCtx(e)})`;
+  }).join(', ');
+}
+
 export function stringOfState(state: State): string {
   let stateRepn: string;
   if (state.error != undefined) {
@@ -134,6 +156,7 @@ export function stringOfState(state: State): string {
   else {
     stateRepn = `{white-fg}sig:{/} ${stringOfSig(state.sig)}
 {white-fg}stack:{/} ${stringOfStack(state.stack)}
+{white-fg}meta:{/} ${stringOfMeta(state.meta)}
 `;
   }
   return `${stringOfToks(state)}\n${stateRepn}`;
@@ -210,6 +233,35 @@ function execInstruction(state: State, inst: Tok): State {
           s.error = `unimplemented identifier ${inst.name}`;
         });
       }
+    }
+
+    case '>': {
+      const popResult = popStack(state);
+      if (popResult == undefined)
+        return produce(state, s => { s.error = `stack underflow during >`; });
+      const { elt, newState } = popResult;
+      if (state.meta.length == 0)
+        return produce(state, s => { s.error = `metacontext underflow during >`; });
+      const oldCtx = state.meta[state.meta.length - 1];
+      if (oldCtx.t != 'ctx')
+        return produce(state, s => { s.error = `expected ctx during >`; });
+      const newCtx = produce(oldCtx, c => {
+        c.ctx.push({ name: inst.name, klass: elt.term, range: { first: 0, last: 1 } });
+      });
+      return produce(newState, s => {
+        s.meta[state.meta.length - 1] = newCtx;
+      });
+    }
+
+    case '(': {
+      const gamma: MetaCtxEntry = {
+        t: 'ctx',
+        ctx: [],
+      };
+
+      return produce(state, s => {
+        s.meta.push(gamma);
+      });
     }
     default: return produce(state, s => {
       s.error = `unimplemented instruction ${inst.t}`;
