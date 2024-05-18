@@ -216,6 +216,30 @@ function formPi(ctx: Ctx, base: StackEntry): StackEntry {
   return { term, klass: base.klass };
 }
 
+// XXX Probably should just do legitimate equality checking
+function flatten(e: Expr): string[] {
+  switch (e.t) {
+    case 'type': return ['type'];
+    case 'kind': return ['kind'];
+    case 'pi': throw new Error(`Didn't expect to flatten anything but base types!`);
+    case 'appc': {
+      const spine: string[] = e.spine.map(x => flatten(x)).reverse().flatMap(x => x);
+      return [...spine, e.cid];
+    }
+    case 'appv': {
+      const spine: string[] = e.spine.map(x => flatten(x)).reverse().flatMap(x => x);
+      return [...spine, e.head];
+    }
+  }
+}
+
+function exprEqual(e1: Expr, e2: Expr) {
+  const f1 = flatten(e1).join(" ");
+  const f2 = flatten(e2).join(" ");
+  return f1 == f2;
+}
+
+
 function execInstruction(state: State, inst: Tok): State {
   switch (inst.t) {
     case 'type': return produce(state, s => {
@@ -248,6 +272,39 @@ function execInstruction(state: State, inst: Tok): State {
               klass: { t: 'type' }
             });
           });
+
+        case 'l':
+          return produce(state, s => {
+            s.stack.push({
+              term: { t: 'appc', cid: 'l', spine: [] },
+              klass: { t: 'appc', cid: 'o', spine: [] },
+            });
+          });
+
+        case 'k':
+          return produce(state, s => {
+            s.stack.push({
+              term: { t: 'appc', cid: 'k', spine: [] },
+              klass: { t: 'appc', cid: 'o', spine: [] },
+            });
+          });
+
+        case 's': {
+          const popResult = popStack(state);
+          if (popResult == undefined)
+            return produce(state, s => { s.error = `stack underflow during s`; });
+          const { elt, newState } = popResult;
+          if (!exprEqual(elt.klass, { t: 'appc', cid: 'o', spine: [] })) {
+            return produce(state, s => { s.error = `type mismatch during s`; });
+          }
+          return produce(newState, s => {
+            s.stack.push({
+              term: { t: 'appc', cid: 's', spine: [elt.term] },
+              klass: { t: 'type' }
+            });
+          });
+        }
+
         default: return produce(state, s => {
           s.error = `unimplemented identifier ${inst.name}`;
         });
