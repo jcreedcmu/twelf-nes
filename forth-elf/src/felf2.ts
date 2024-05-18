@@ -1,76 +1,6 @@
 import * as blessed from 'blessed';
-
-type Tok =
-  | { t: 'type' }
-  | { t: '>', name: string }
-  | { t: '(' }
-  | { t: ')' }
-  | { t: '[' }
-  | { t: ']' }
-  | { t: '.', name: string }
-  | { t: 'var', name: string }
-  ;
-
-type Rng = { first: number, last: number };
-
-type PosTok = { tok: Tok, range: Range };
-
-type SigEntry = {
-  name: string,
-  range: Range,
-};
-
-type CtxEntry = {
-  name: string,
-  range: Range,
-};
-
-
-type MetaCtxEntry =
-  | { t: 'sub', sub: Ctx }
-  | { t: 'ctx', ctx: Ctx }
-  ;
-
-type CtlEntry = {
-  pc: number
-};
-
-
-type StackEntry = {
-
-};
-
-type Sig = SigEntry[];
-type Ctx = CtxEntry[];
-type MetaCtx = MetaCtxEntry[];
-type Ctl = CtlEntry[];
-type Stack = StackEntry[];
-
-type State = {
-  pc: number,
-  sig: Sig,
-  ctx: Ctx,
-  meta: MetaCtx,
-  ctl: Ctl,
-  stack: Stack,
-}
-
-function mkState(): State {
-  return {
-    pc: 0,
-    ctl: [],
-    ctx: [],
-    meta: [],
-    sig: [],
-    stack: [],
-  }
-}
-
-function stringOfState(state: State) {
-  return `{bold}sig{/bold}:
-{bold}stack{/bold}: foo
-`
-}
+import { parse, mkState, stringOfState } from './state';
+import { mkAppState, nextStep, prevStep, stringOfAppState } from './app-state';
 
 ////////////////////////////////////////////////////////////////
 
@@ -100,13 +30,35 @@ screen.key(['escape', 'q', 'C-c'], (ch, key) => {
   return process.exit(0);
 });
 
-screen.on('keypress', (ch, key) => {
-  box.setContent(key.full);
+const input = `
+type : o.
+o : k .
+o : l .
+( o > o ) : s .
+`;
+
+
+let state = mkAppState(input);
+
+screen.key(['left'], (ch, key) => {
+  state = prevStep(state);
+  box.setContent(stringOfAppState(state));
   screen.render();
 });
 
+screen.key(['right'], (ch, key) => {
+  state = nextStep(state);
+  box.setContent(stringOfAppState(state));
+  screen.render();
+});
+
+// screen.on('keypress', (ch, key) => {
+//   box.setContent(key.full);
+//   screen.render();
+// });
+
 box.focus();
 
-const state = mkState();
-box.setContent(stringOfState(state));
+
+box.setContent(stringOfAppState(state));
 screen.render();

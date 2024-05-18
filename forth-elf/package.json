@@ -12,6 +12,7 @@
   "dependencies": {
     "@types/blessed": "^0.1.25",
     "blessed": "^0.1.81",
+    "immer": "^10.1.1",
     "typescript": "^5.4.5"
   },
   "devDependencies": {
