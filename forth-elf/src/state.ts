@@ -101,8 +101,8 @@ export function mkState(toks: Toks): State {
 function stringOfTok(tok: Tok): string {
   switch (tok.t) {
     case 'type': return 'type';
-    case '>': return tok.name == undefined ? '>' : `>[${tok.name}]`;
-    case '.': return tok.name == undefined ? '.' : `.[${tok.name}]`;
+    case '>': return tok.name == undefined ? '>' : `: ${tok.name} >`;
+    case '.': return tok.name == undefined ? '.' : `: ${tok.name} .`;
     case 'id': return tok.name;
     case '(': return '(';
     case ')': return ')';
@@ -118,7 +118,7 @@ function stringOfToks(state: State): string {
 function stringOfSig(sig: Sig): string {
   return sig.map(e => {
     return `${e.name} : ${exprToString(e.klass)}`;
-  }).join(', ');
+  }).join('\n');
 }
 
 function stringOfStack(stack: Stack): string {
@@ -154,7 +154,8 @@ export function stringOfState(state: State): string {
     stateRepn = `{bold}{red-fg}ERROR: ${state.error}{/}`;
   }
   else {
-    stateRepn = `{white-fg}sig:{/} ${stringOfSig(state.sig)}
+    stateRepn = `{white-fg}sig:{/}
+${stringOfSig(state.sig)}
 {white-fg}stack:{/} ${stringOfStack(state.stack)}
 {white-fg}meta:{/} ${stringOfMeta(state.meta)}
 `;
@@ -195,6 +196,24 @@ function popStack(state: State): undefined | { elt: StackEntry, newState: State 
     s.stack.pop();
   });
   return { elt, newState };
+}
+
+function popMeta(state: State): undefined | { elt: MetaCtxEntry, newState: State } {
+  if (state.meta.length == 0)
+    return undefined;
+  const elt = state.meta.at(-1)!;
+  const newState = produce(state, s => {
+    s.meta.pop();
+  });
+  return { elt, newState };
+}
+
+function formPi(ctx: Ctx, base: StackEntry): StackEntry {
+  let term = base.term;
+  for (let i = 0; i < ctx.length; i++) {
+    term = { t: 'pi', a: ctx[i].klass, b: term };
+  }
+  return { term, klass: base.klass };
 }
 
 function execInstruction(state: State, inst: Tok): State {
@@ -261,6 +280,31 @@ function execInstruction(state: State, inst: Tok): State {
 
       return produce(state, s => {
         s.meta.push(gamma);
+      });
+    }
+
+    case ')': {
+      const pr1 = popStack(state);
+      if (pr1 == undefined)
+        return produce(state, s => { s.error = `stack underflow during )`; });
+      const { elt: stackEntry, newState: state1 } = pr1;
+
+      if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind') {
+        return produce(state, s => { s.error = `expected classifier on stack during .`; });
+      }
+
+      const pr2 = popMeta(state1);
+      if (pr2 == undefined)
+        return produce(state1, s => { s.error = `metacontext underflow during )`; });
+      const { elt: metaEntry, newState: state2 } = pr2;
+
+      if (metaEntry.t != 'ctx')
+        return produce(state, s => { s.error = `expected ctx during >`; });
+
+      const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
+
+      return produce(state2, s => {
+        s.stack.push(newStackEntry);
       });
     }
     default: return produce(state, s => {
