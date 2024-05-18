@@ -300,7 +300,7 @@ function execInstruction(state: State, inst: Tok): State {
           return produce(newState, s => {
             s.stack.push({
               term: { t: 'appc', cid: 's', spine: [elt.term] },
-              klass: { t: 'type' }
+              klass: { t: 'appc', cid: 'o', spine: [] }
             });
           });
         }
