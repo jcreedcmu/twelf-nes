@@ -1,8 +1,11 @@
 import ReactDOM from 'react-dom';
 import { useEffectfulReducer } from './use-effectful-reducer';
+import { State, run, mkState, parse } from './state';
+import { produce } from 'immer';
+import { useEffect } from 'react';
 
 type AppProps = {
-
+  input: string,
 };
 
 export function init(props: AppProps) {
@@ -11,38 +14,70 @@ export function init(props: AppProps) {
 
 
 export type Action =
-  { t: 'action' }
+  { t: 'changeStep', dframe: number }
   ;
 
 
-export type State = {
+export type AppState = {
+  frame: number,
+  states: State[],
 }
 
 type Effect =
   { t: 'effect' }
   ;
 
-function reduce(state: State, action: Action): { state: State, effects: Effect[] } {
-  return { state: state, effects: [] };
+function reduce(state: AppState, action: Action): { state: AppState, effects: Effect[] } {
+  return { state: reduce_inner(state, action), effects: [] };
 }
 
+function reduce_inner(state: AppState, action: Action): AppState {
+  switch (action.t) {
+    case 'changeStep': {
+      const newFrame = Math.max(Math.min(state.frame + action.dframe, state.states.length - 1), 0);
+      return produce(state, s => {
+        s.frame = newFrame;
+      });
+    }
+  }
+}
 
-function mkState(): State {
+export function mkAppState(input: string): AppState {
+  const states = run(mkState(parse(input)));
   return {
-  };
+    frame: 0,
+    states,
+  }
 }
 
 
 export type Dispatch = (action: Action) => void;
 
-function App(props: AppProps): JSX.Element {
-  const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
 
-  function doEffect(s: State, dispatch: Dispatch, e: Effect) {
+function App(props: AppProps): JSX.Element {
+  const [state, dispatch] = useEffectfulReducer<Action, AppState, Effect>(mkAppState(props.input), reduce, doEffect);
+
+  const keydownListener = (e: KeyboardEvent) => {
+    switch (e.code) {
+      case 'ArrowLeft': dispatch({ t: 'changeStep', dframe: -1 }); break;
+      case 'ArrowRight': dispatch({ t: 'changeStep', dframe: 1 }); break;
+      default:
+        console.log(e.code);
+    }
+  }
+
+  useEffect(() => {
+    document.addEventListener('keydown', keydownListener);
+    return () => {
+      document.removeEventListener('keydown', keydownListener);
+    }
+  });
+
+  function doEffect(s: AppState, dispatch: Dispatch, e: Effect) {
     switch (e.t) {
       case 'effect': throw new Error(`unimplemented`); break;
     }
   }
 
-  return <div>hello</div>;
+  return <div>{state.frame}</div>;
 }

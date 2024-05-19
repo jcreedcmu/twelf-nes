@@ -180,7 +180,6 @@ export function parse(input: string): Tok[] {
       case ':': name = toks[++i]; break;
       case '>': out.push({ t: '>', name }); name = undefined; break;
       case '.': out.push({ t: '.', name }); name = undefined; break;
-      case ']': out.push({ t: ']' }); break;
       default:
         out.push({ t: 'id', name: toks[i] });
     }
