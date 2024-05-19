@@ -1,4 +1,5 @@
 import { CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from "./state";
+import { Dispatch } from "./state-types";
 
 function stringOfTok(tok: Tok): string {
   switch (tok.t) {
@@ -30,12 +31,13 @@ function exprToString(e: Expr): string {
   }
 }
 
-function renderToks(state: State): JSX.Element {
+function renderToks(state: State, dispatch: Dispatch): JSX.Element {
   const str = state.toks.map(stringOfTok).map((x, i) => {
     const className = ['token'];
     if (i == state.pc) className.push('active');
     if (i < state.pc) className.push('executed');
-    return <div className={className.join(' ')}>{x}</div>;
+    return <div className={className.join(' ')}
+      onMouseDown={(e) => { dispatch({ t: 'setStep', frame: i }) }}>{x}</div>;
   });
   return <div>{str}</div>;
 }
@@ -76,7 +78,7 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   return <pre>{str}</pre>;
 }
 
-export function renderState(state: State): JSX.Element {
+export function renderState(state: State, dispatch: Dispatch): JSX.Element {
   let stateRepn: JSX.Element;
   if (state.error != undefined) {
     stateRepn = <span style={{ color: 'red' }}>ERROR: {state.error}</span>;
@@ -95,6 +97,6 @@ export function renderState(state: State): JSX.Element {
      * /} ${stringOfMeta(state.meta)}
      * `; */
   }
-  return <div>{renderToks(state)}
+  return <div>{renderToks(state, dispatch)}
     {stateRepn} </div>;
 }

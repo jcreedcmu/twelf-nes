@@ -4,6 +4,7 @@ import { State, run, mkState, parse } from './state';
 import { produce } from 'immer';
 import { useEffect } from 'react';
 import { renderState } from './render-state';
+import { Action, AppState, Dispatch, Effect } from './state-types';
 
 type AppProps = {
   input: string,
@@ -13,21 +14,6 @@ export function init(props: AppProps) {
   ReactDOM.render(<App {...props} />, document.querySelector('.app') as any);
 }
 
-
-export type Action =
-  { t: 'changeStep', dframe: number }
-  ;
-
-
-export type AppState = {
-  frame: number,
-  states: State[],
-}
-
-type Effect =
-  { t: 'effect' }
-  ;
-
 function reduce(state: AppState, action: Action): { state: AppState, effects: Effect[] } {
   return { state: reduce_inner(state, action), effects: [] };
 }
@@ -36,6 +22,12 @@ function reduce_inner(state: AppState, action: Action): AppState {
   switch (action.t) {
     case 'changeStep': {
       const newFrame = Math.max(Math.min(state.frame + action.dframe, state.states.length - 1), 0);
+      return produce(state, s => {
+        s.frame = newFrame;
+      });
+    }
+    case 'setStep': {
+      const newFrame = Math.max(Math.min(action.frame, state.states.length - 1), 0);
       return produce(state, s => {
         s.frame = newFrame;
       });
@@ -51,15 +43,10 @@ export function mkAppState(input: string): AppState {
   }
 }
 
-
-export type Dispatch = (action: Action) => void;
-
-
-export function renderAppState(app: AppState): JSX.Element {
+export function renderAppState(app: AppState, dispatch: Dispatch): JSX.Element {
   return <div><b>time</b>: {app.frame}<br />
-    {renderState(app.states[app.frame])}</div>;
+    {renderState(app.states[app.frame], dispatch)}</div>;
 }
-
 
 function App(props: AppProps): JSX.Element {
   const [state, dispatch] = useEffectfulReducer<Action, AppState, Effect>(mkAppState(props.input), reduce, doEffect);
@@ -96,5 +83,5 @@ function App(props: AppProps): JSX.Element {
     }
   }
 
-  return renderAppState(state);
+  return renderAppState(state, dispatch);
 }

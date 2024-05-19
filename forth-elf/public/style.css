@@ -5,6 +5,7 @@
   padding: 4px;
   font-family: monospace;
   display: inline-block;
+  cursor: pointer;
 }
 
 .active {
