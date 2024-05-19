@@ -1,3 +1,5 @@
+///XXX deprecated in favor of react visualizer
+
 // Prototype of forth-elf typechecker idea
 import * as fs from 'fs';
 
