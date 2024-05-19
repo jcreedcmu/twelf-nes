@@ -1,8 +1,9 @@
 import ReactDOM from 'react-dom';
 import { useEffectfulReducer } from './use-effectful-reducer';
-import { State, run, mkState, parse, stringOfState } from './state';
+import { State, run, mkState, parse } from './state';
 import { produce } from 'immer';
 import { useEffect } from 'react';
+import { renderState } from './render-state';
 
 type AppProps = {
   input: string,
@@ -54,9 +55,9 @@ export function mkAppState(input: string): AppState {
 export type Dispatch = (action: Action) => void;
 
 
-export function stringOfAppState(app: AppState): string {
-  return `time:{/} ${app.frame}
-${stringOfState(app.states[app.frame])}`;
+export function renderAppState(app: AppState): JSX.Element {
+  return <div><b>time</b>: {app.frame}<br />
+    {renderState(app.states[app.frame])}</div>;
 }
 
 
@@ -95,5 +96,5 @@ function App(props: AppProps): JSX.Element {
     }
   }
 
-  return <pre>{stringOfAppState(state)}</pre>;
+  return renderAppState(state);
 }
