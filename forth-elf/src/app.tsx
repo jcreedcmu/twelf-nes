@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { useEffectfulReducer } from './use-effectful-reducer';
-import { State, run, mkState, parse } from './state';
+import { State, run, mkState, parse, stringOfState } from './state';
 import { produce } from 'immer';
 import { useEffect } from 'react';
 
@@ -54,13 +54,29 @@ export function mkAppState(input: string): AppState {
 export type Dispatch = (action: Action) => void;
 
 
+export function stringOfAppState(app: AppState): string {
+  return `time:{/} ${app.frame}
+${stringOfState(app.states[app.frame])}`;
+}
+
+
 function App(props: AppProps): JSX.Element {
   const [state, dispatch] = useEffectfulReducer<Action, AppState, Effect>(mkAppState(props.input), reduce, doEffect);
 
   const keydownListener = (e: KeyboardEvent) => {
     switch (e.code) {
-      case 'ArrowLeft': dispatch({ t: 'changeStep', dframe: -1 }); break;
-      case 'ArrowRight': dispatch({ t: 'changeStep', dframe: 1 }); break;
+      case 'ArrowLeft': {
+        dispatch({ t: 'changeStep', dframe: -1 });
+        e.stopPropagation();
+        e.preventDefault();
+        break;
+      }
+      case 'ArrowRight': {
+        dispatch({ t: 'changeStep', dframe: 1 });
+        e.stopPropagation();
+        e.preventDefault();
+        break;
+      }
       default:
         console.log(e.code);
     }
@@ -79,5 +95,5 @@ function App(props: AppProps): JSX.Element {
     }
   }
 
-  return <div>{state.frame}</div>;
+  return <pre>{stringOfAppState(state)}</pre>;
 }
