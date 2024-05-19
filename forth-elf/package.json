@@ -2,6 +2,7 @@
   "name": "forth-elf",
   "version": "1.0.0",
   "description": "forth-elf",
+  "type": "module",
   "main": "felf.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,8 +12,12 @@
   "license": "ISC",
   "dependencies": {
     "@types/blessed": "^0.1.25",
+    "@types/react-dom": "^18.3.0",
     "blessed": "^0.1.81",
+    "esbuild": "^0.21.3",
     "immer": "^10.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "typescript": "^5.4.5"
   },
   "devDependencies": {

@@ -2,3 +2,5 @@
 *.dvi
 *.log
 *.pdf
+forth-elf/public/bundle.js
+forth-elf/public/bundle.js.map
