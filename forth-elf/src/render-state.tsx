@@ -30,20 +30,28 @@ function exprToString(e: Expr): string {
   }
 }
 
-function stringOfToks(state: State): string {
-  return state.toks.map(stringOfTok).map((x, i) => i == state.pc ? `{#0fffff-bg}${x}{/}` : x).join(' ');
+function renderToks(state: State): JSX.Element {
+  const str = state.toks.map(stringOfTok).map((x, i) => {
+    const className = ['token'];
+    if (i == state.pc) className.push('active');
+    if (i < state.pc) className.push('executed');
+    return <div className={className.join(' ')}>{x}</div>;
+  });
+  return <div>{str}</div>;
 }
 
-function stringOfSig(sig: Sig): string {
-  return sig.map(e => {
+function renderSig(sig: Sig): JSX.Element {
+  const str = sig.map(e => {
     return `${e.name} : ${exprToString(e.klass)}`;
   }).join('\n');
+  return <pre>{str}</pre>;
 }
 
-function stringOfStack(stack: Stack): string {
-  return stack.map(e => {
+function renderStack(stack: Stack): JSX.Element {
+  const str = stack.map(e => {
     return `${exprToString(e.term)} : ${exprToString(e.klass)}`;
   }).join(', ');
+  return <pre>{str}</pre>;
 }
 
 function stringOfSubEntry(e: CtxEntry): string {
@@ -61,24 +69,32 @@ function stringOfCtx(meta: MetaCtxEntry): string {
   }
 }
 
-function stringOfMeta(meta: MetaCtx): string {
-  return meta.map(e => {
+function renderMeta(meta: MetaCtx): JSX.Element {
+  const str = meta.map(e => {
     return `(${stringOfCtx(e)})`;
   }).join(', ');
+  return <pre>{str}</pre>;
 }
 
 export function renderState(state: State): JSX.Element {
-  let stateRepn: string;
+  let stateRepn: JSX.Element;
   if (state.error != undefined) {
-    stateRepn = `{bold}{red-fg}ERROR: ${state.error}{/}`;
+    stateRepn = <span style={{ color: 'red' }}>ERROR: {state.error}</span>;
   }
   else {
-    stateRepn = `{white-fg}sig:{/}
-${stringOfSig(state.sig)}
-{white-fg}stack:{/} ${stringOfStack(state.stack)}
-{white-fg}meta:{/} ${stringOfMeta(state.meta)}
-`;
+    stateRepn = <div>
+      <b>Sig</b>:{renderSig(state.sig)}<br />
+      <b>Stack</b>:{renderStack(state.stack)}<br />
+      <b>Meta</b>:{renderMeta(state.meta)}<br />
+    </div>;
+
+    /* ${stringOfSig(state.sig)}
+     *       {white - fg} stack: {
+     * /} ${stringOfStack(state.stack)}
+     * { white - fg} meta: {
+     * /} ${stringOfMeta(state.meta)}
+     * `; */
   }
-  return <pre>${stringOfToks(state)}
-    ${stateRepn} </pre>;
+  return <div>{renderToks(state)}
+    {stateRepn} </div>;
 }

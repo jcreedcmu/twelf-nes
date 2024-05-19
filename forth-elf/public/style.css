@@ -1,0 +1,16 @@
+.token {
+  border: 1px solid #ccc;
+  border-radius: 7px;
+  margin: 4px;
+  padding: 4px;
+  font-family: monospace;
+  display: inline-block;
+}
+
+.active {
+  background-color: #ffff00;
+}
+
+.executed {
+  opacity: 40%;
+}
