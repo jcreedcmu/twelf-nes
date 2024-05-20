@@ -2,7 +2,7 @@ build:
 	node ./build.js
 
 serve:
-	cd public && python3 -m http.server
+	node ./server/server.js
 
 count:
 	wc -l src/*.ts{x,}

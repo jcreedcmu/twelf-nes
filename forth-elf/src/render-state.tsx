@@ -1,6 +1,7 @@
 import { tokenToString } from "typescript";
 import { CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
+import Tex from './katex';
 
 function stringOfTok(tok: Tok): string {
   switch (tok.t) {
@@ -56,9 +57,10 @@ function renderToks(state: State, dispatch: Dispatch): JSX.Element {
 }
 
 function renderSig(sig: Sig): JSX.Element {
+  const newline = "\n";
   const str = sig.map(e => {
-    return `${e.name} : ${exprToString(e.klass)}`;
-  }).join('\n');
+    return <span><Tex expr={e.name} /> : {exprToString(e.klass)}.{newline}</span>;
+  });
   return <pre>{str}</pre>;
 }
 
