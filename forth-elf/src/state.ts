@@ -38,7 +38,7 @@ function popMeta(state: State): undefined | { elt: MetaCtxEntry, newState: State
 function formPi(ctx: Ctx, base: StackEntry): StackEntry {
   let term = base.term;
   for (let i = 0; i < ctx.length; i++) {
-    term = { t: 'pi', a: ctx[i].klass, b: term };
+    term = { t: 'pi', name: ctx[i].name, a: ctx[i].klass, b: term };
   }
   return { term, klass: base.klass };
 }

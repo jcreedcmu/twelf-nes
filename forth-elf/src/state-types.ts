@@ -17,7 +17,7 @@ export type Dispatch = (action: Action) => void;
 export type Expr =
   | { t: 'type' }
   | { t: 'kind' }
-  | { t: 'pi', a: Expr, b: Expr }
+  | { t: 'pi', name: string | undefined, a: Expr, b: Expr }
   | { t: 'appc', cid: string, spine: Expr[] }
   | { t: 'appv', head: string, spine: Expr[] }
 

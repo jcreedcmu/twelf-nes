@@ -26,7 +26,8 @@ function exprToString(e: Expr): string {
   switch (e.t) {
     case 'type': return 'Type';
     case 'kind': return 'Kind';
-    case 'pi': return `Pi {_:${exprToString(e.a)}} ${exprToString(e.b)}`;
+    case 'pi': return e.name == undefined ? `(${exprToString(e.a)} -> ${exprToString(e.b)})`
+      : `{${e.name}:${exprToString(e.a)}} ${exprToString(e.b)}`;
     case 'appc': return appToSpine(e.cid, e.spine);
     case 'appv': return appToSpine(e.head, e.spine);
   }
