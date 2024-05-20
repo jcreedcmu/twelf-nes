@@ -1,3 +1,4 @@
+import { tokenToString } from "typescript";
 import { CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 
@@ -32,14 +33,25 @@ function exprToString(e: Expr): string {
 }
 
 function renderToks(state: State, dispatch: Dispatch): JSX.Element {
-  const str = state.toks.map(stringOfTok).map((x, i) => {
-    const className = ['token'];
-    if (i == state.pc) className.push('active');
-    if (i < state.pc) className.push('executed');
-    return <div className={className.join(' ')}
-      onMouseDown={(e) => { dispatch({ t: 'setStep', frame: i }) }}>{x}</div>;
-  });
-  return <div>{str}</div>;
+  let i = 0;
+  function setStep(i: number): (e: React.MouseEvent) => void {
+    return e => dispatch({ t: 'setStep', frame: i });
+  }
+
+  const row: JSX.Element[] = [];
+  for (const decl of state.origToks) {
+    for (const tok of decl) {
+      const className = ['token'];
+      if (i == state.pc) className.push('active');
+      if (i < state.pc) className.push('executed');
+      const str = stringOfTok(tok);
+      const elt = <div className={className.join(' ')} onMouseDown={setStep(i)}>{str}</div>;
+      row.push(elt);
+      i++;
+    }
+    row.push(<br />);
+  }
+  return <div>{row}</div>;
 }
 
 function renderSig(sig: Sig): JSX.Element {
