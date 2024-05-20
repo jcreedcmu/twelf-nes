@@ -2,6 +2,7 @@ import { tokenToString } from "typescript";
 import { CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 import Tex from './katex';
+import { CSSProperties } from "react";
 
 function stringOfTok(tok: Tok): string {
   switch (tok.t) {
@@ -23,6 +24,13 @@ function appToSpine(head: string, spine: Expr[]): string {
     return `${head}·(${spine.map(exprToString).join(",")})`;
 }
 
+function appToSpineTex(head: string, spine: Expr[]): string {
+  if (spine.length == 0)
+    return head;
+  else
+    return `${head}\\cdot(${spine.map(exprToTex).join(",")})`;
+}
+
 function exprToString(e: Expr): string {
   switch (e.t) {
     case 'type': return 'Type';
@@ -31,6 +39,17 @@ function exprToString(e: Expr): string {
       : `{${e.name}:${exprToString(e.a)}} ${exprToString(e.b)}`;
     case 'appc': return appToSpine(e.cid, e.spine);
     case 'appv': return appToSpine(e.head, e.spine);
+  }
+}
+
+function exprToTex(e: Expr): string {
+  switch (e.t) {
+    case 'type': return '\\mathsf{type}';
+    case 'kind': return '\\mathsf{kind}';
+    case 'pi': return e.name == undefined ? `(${exprToTex(e.a)} \\to ${exprToTex(e.b)})`
+      : `\\left( \\prod_{ ${e.name} {:} ${exprToTex(e.a)}}  ${exprToTex(e.b)} \\right)`;
+    case 'appc': return appToSpineTex(e.cid, e.spine);
+    case 'appv': return appToSpineTex(e.head, e.spine);
   }
 }
 
@@ -56,54 +75,82 @@ function renderToks(state: State, dispatch: Dispatch): JSX.Element {
   return <div>{row}</div>;
 }
 
+function declToTex(decl: { name: string, klass: Expr }): string {
+  return `${decl.name} : ${exprToTex(decl.klass)}`;
+}
+
+function subToTex(decl: { term: Expr, klass: Expr }): string {
+  return `${exprToTex(decl.term)} : ${exprToTex(decl.klass)}`;
+}
+
 function renderSig(sig: Sig): JSX.Element {
   const newline = "\n";
+
   const str = sig.map(e => {
-    return <span><Tex expr={e.name} /> : {exprToString(e.klass)}.{newline}</span>;
+    return <span><Tex expr={declToTex(e) + '.'} />{newline}</span>;
   });
   return <pre>{str}</pre>;
 }
 
 function renderStack(stack: Stack): JSX.Element {
+  const newline = "\n";
+
   const str = stack.map(e => {
-    return `${exprToString(e.term)} : ${exprToString(e.klass)}`;
-  }).join(', ');
+    return <span><Tex expr={subToTex(e)} />{newline}</span>;
+  });
+
   return <pre>{str}</pre>;
 }
 
-function stringOfSubEntry(e: CtxEntry): string {
-  return `${e.name ?? '_'}:${exprToString(e.klass)}`;
+function texOfSubEntry(e: CtxEntry): string {
+  return `${e.name ?? '\\_'}:${exprToTex(e.klass)}`;
 }
 
-function stringOfCtxEntry(e: CtxEntry): string {
-  return `${e.name ?? '_'}:${exprToString(e.klass)}`;
+function texOfCtxEntry(e: CtxEntry): string {
+  return `${e.name ?? '\\_'}:${exprToTex(e.klass)}`;
 }
 
-function stringOfCtx(meta: MetaCtxEntry): string {
+function texOfCtx(meta: MetaCtxEntry): string {
   switch (meta.t) {
-    case 'sub': return meta.sub.map(stringOfSubEntry).join(', ');
-    case 'ctx': return meta.ctx.map(stringOfCtxEntry).join(', ');
+    case 'sub': return meta.sub.map(texOfSubEntry).join(', ');
+    case 'ctx': return meta.ctx.map(texOfCtxEntry).join(', ');
   }
 }
 
 function renderMeta(meta: MetaCtx): JSX.Element {
+  const newline = "\n";
+
   const str = meta.map(e => {
-    return `(${stringOfCtx(e)})`;
-  }).join(', ');
+    return <span><Tex expr={'(' + texOfCtx(e) + ')'} />{newline}</span>;
+  });
+
   return <pre>{str}</pre>;
 }
 
 export function renderState(state: State, dispatch: Dispatch): JSX.Element {
-  let stateRepn: JSX.Element;
+  let stateRepn: JSX.Element[];
+  const tdStyle: CSSProperties = {
+    verticalAlign: 'top',
+    width: '15%',
+  };
+
+
   if (state.error != undefined) {
-    stateRepn = <span style={{ color: 'red' }}>ERROR: {state.error}</span>;
+    stateRepn = [<td style={{ color: 'red' }}>ERROR: {state.error}</td>];
   }
   else {
-    stateRepn = <div>
-      <b>Sig</b>:{renderSig(state.sig)}<br />
-      <b>Stack</b>:{renderStack(state.stack)}<br />
-      <b>Meta</b>:{renderMeta(state.meta)}<br />
-    </div>;
+    stateRepn =
+      [
+        <td style={tdStyle}>
+          <b>Sig</b>:{renderSig(state.sig)}
+        </td>,
+        <td style={tdStyle}>
+          <b>Stack</b>:{renderStack(state.stack)}
+        </td>,
+        <td style={tdStyle}>
+          <b>Meta</b>:{renderMeta(state.meta)}<br />
+        </td>,
+      ];
 
     /* ${stringOfSig(state.sig)}
      *       {white - fg} stack: {
@@ -112,6 +159,6 @@ export function renderState(state: State, dispatch: Dispatch): JSX.Element {
      * /} ${stringOfMeta(state.meta)}
      * `; */
   }
-  return <div>{renderToks(state, dispatch)}
-    {stateRepn} </div>;
+  return <table className="state"><tr><td style={tdStyle}>{renderToks(state, dispatch)}</td>
+    {stateRepn} </tr></table>;
 }
