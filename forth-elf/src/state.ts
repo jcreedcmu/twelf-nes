@@ -156,6 +156,15 @@ function execInstruction(state: State, inst: Tok): State {
             });
           });
         }
+
+        case 'x':
+          return produce(state, s => {
+            s.stack.push({
+              term: { t: 'appv', head: 'x', spine: [] },
+              klass: { t: 'appc', cid: 'o', spine: [] },
+            });
+          });
+
         default: return produce(state, s => {
           s.error = `unimplemented identifier ${inst.name}`;
         });
