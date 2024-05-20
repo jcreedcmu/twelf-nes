@@ -1,73 +1,5 @@
 import { produce } from 'immer';
-
-export type Expr =
-  | { t: 'type' }
-  | { t: 'kind' }
-  | { t: 'pi', a: Expr, b: Expr }
-  | { t: 'appc', cid: string, spine: Expr[] }
-  | { t: 'appv', head: string, spine: Expr[] }
-
-
-export type Tok =
-  | { t: 'type' }
-  | { t: '>', name: string | undefined }
-  | { t: '(' }
-  | { t: ')' }
-  | { t: '[' }
-  | { t: ']' }
-  | { t: '.', name: string | undefined }
-  | { t: 'id', name: string }
-  ;
-
-export type Rng = { first: number, last: number };
-
-export type PosTok = { tok: Tok, range: Range };
-
-export type SigEntry = {
-  name: string,
-  klass: Expr,
-  range: Rng,
-};
-
-export type CtxEntry = {
-  name: string | undefined,
-  klass: Expr,
-  range: Rng,
-};
-
-
-export type MetaCtxEntry =
-  | { t: 'sub', sub: Ctx }
-  | { t: 'ctx', ctx: Ctx }
-  ;
-
-export type CtlEntry = {
-  pc: number
-};
-
-
-export type StackEntry = {
-  term: Expr,
-  klass: Expr
-};
-
-export type Sig = SigEntry[];
-export type Ctx = CtxEntry[];
-export type MetaCtx = MetaCtxEntry[];
-export type Ctl = CtlEntry[];
-export type Stack = StackEntry[];
-export type Toks = Tok[];
-
-export type State = {
-  pc: number,
-  sig: Sig,
-  ctx: Ctx,
-  meta: MetaCtx,
-  ctl: Ctl,
-  stack: Stack,
-  toks: Toks,
-  error: string | undefined,
-}
+import { Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
 
 export function mkState(toks: Toks): State {
   return {
@@ -80,31 +12,6 @@ export function mkState(toks: Toks): State {
     toks,
     error: undefined,
   }
-}
-
-
-export function parse(input: string): Tok[] {
-  const toks = input.split(/\n/)
-    .map(x => x.replace(/#.*/g, ''))
-    .flatMap(x => x.split(/\s+/))
-    .filter(x => x.length != 0);
-  const out: Tok[] = [];
-  let name: string | undefined = undefined;
-  for (let i = 0; i < toks.length; i++) {
-    switch (toks[i]) {
-      case 'type': out.push({ t: 'type' }); break;
-      case '(': out.push({ t: '(' }); break;
-      case ')': out.push({ t: ')' }); break;
-      case '[': out.push({ t: '[' }); break;
-      case ']': out.push({ t: ']' }); break;
-      case ':': name = toks[++i]; break;
-      case '>': out.push({ t: '>', name }); name = undefined; break;
-      case '.': out.push({ t: '.', name }); name = undefined; break;
-      default:
-        out.push({ t: 'id', name: toks[i] });
-    }
-  }
-  return out;
 }
 
 function popStack(state: State): undefined | { elt: StackEntry, newState: State } {

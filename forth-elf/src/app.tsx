@@ -1,6 +1,8 @@
 import ReactDOM from 'react-dom';
 import { useEffectfulReducer } from './use-effectful-reducer';
-import { State, run, mkState, parse } from './state';
+import { run, mkState } from './state';
+import { parse } from './parse';
+import { State } from './state-types';
 import { produce } from 'immer';
 import { useEffect } from 'react';
 import { renderState } from './render-state';

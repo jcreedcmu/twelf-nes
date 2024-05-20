@@ -1,4 +1,4 @@
-import { CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from "./state";
+import { CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 
 function stringOfTok(tok: Tok): string {
