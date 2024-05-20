@@ -224,6 +224,30 @@ function execInstruction(state: State, inst: Tok): State {
           });
         }
 
+        case 'b': {
+          const popResult1 = popStack(state);
+          if (popResult1 == undefined)
+            return produce(state, s => { s.error = `stack underflow during s`; });
+          const { elt: elt1, newState: newState1 } = popResult1;
+          if (!exprEqual(elt1.klass, { t: 'appc', cid: 'o', spine: [] })) {
+            return produce(state, s => { s.error = `type mismatch during s`; });
+          }
+
+          const popResult2 = popStack(newState1);
+          if (popResult2 == undefined)
+            return produce(newState1, s => { s.error = `stack underflow during s`; });
+          const { elt: elt2, newState: newState2 } = popResult2;
+          if (!exprEqual(elt2.klass, { t: 'appc', cid: 'o', spine: [] })) {
+            return produce(newState1, s => { s.error = `type mismatch during s`; });
+          }
+
+          return produce(newState2, s => {
+            s.stack.push({
+              term: { t: 'appc', cid: 'b', spine: [elt1.term, elt2.term] },
+              klass: { t: 'type' }
+            });
+          });
+        }
         default: return produce(state, s => {
           s.error = `unimplemented identifier ${inst.name}`;
         });

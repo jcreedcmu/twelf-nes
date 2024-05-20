@@ -1,15 +1,21 @@
 .token {
   border: 1px solid #ccc;
-  border-radius: 7px;
-  margin: 4px;
-  padding: 4px;
+  border-radius: 8px;
+  margin: 2px;
+  padding: 4px 8px;
   font-family: monospace;
   display: inline-block;
   cursor: pointer;
+  user-select: none;
 }
 
-.active {
-  background-color: #ffff00;
+.token:hover {
+  background-color: #ddffff;
+}
+
+.active, .active:hover {
+  border-color: #444;
+  background-color: #ffdd00;
 }
 
 .executed {
