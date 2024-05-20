@@ -1,10 +1,10 @@
 import { Tok } from './state-types';
 
-export function parse(input: string): Tok[] {
-  const toks = input.split(/\n/)
-    .map(x => x.replace(/#.*/g, ''))
-    .flatMap(x => x.split(/\s+/))
-    .filter(x => x.length != 0);
+function ajoin<T>(xss: T[][], delim: T) {
+  return xss.flatMap(xs => [delim, ...xs]).slice(1);
+}
+
+function parseToks(toks: string[]): Tok[] {
   const out: Tok[] = [];
   let name: string | undefined = undefined;
   for (let i = 0; i < toks.length; i++) {
@@ -22,4 +22,13 @@ export function parse(input: string): Tok[] {
     }
   }
   return out;
+}
+
+export function parse(input: string): Tok[][] {
+  const tokss = input.split(/\n/)
+    .map(x => x.replace(/#.*/g, ''))
+    .map(x => x.split(/\s+/).filter(x => x.length != 0))
+    .filter(x => x.length != 0);
+
+  return tokss.map(toks => parseToks(toks));
 }

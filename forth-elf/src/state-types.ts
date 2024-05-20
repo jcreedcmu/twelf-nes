@@ -80,5 +80,6 @@ export type State = {
   ctl: Ctl,
   stack: Stack,
   toks: Toks,
+  origToks: Toks[], // organized by decl, useful for debugging
   error: string | undefined,
 }

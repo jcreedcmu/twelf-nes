@@ -1,7 +1,7 @@
 import { produce } from 'immer';
 import { Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
 
-export function mkState(toks: Toks): State {
+export function mkState(toks: Tok[][]): State {
   return {
     pc: 0,
     ctl: [],
@@ -9,7 +9,8 @@ export function mkState(toks: Toks): State {
     meta: [],
     sig: [],
     stack: [],
-    toks,
+    toks: toks.flatMap(x => x),
+    origToks: toks,
     error: undefined,
   }
 }
