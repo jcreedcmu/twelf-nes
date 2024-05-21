@@ -1,6 +1,8 @@
 import { produce } from 'immer';
 import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
 import { Rng } from "./range";
+import { tokenToString } from 'typescript';
+import { stringOfTok } from './render-state';
 
 const ITERATIONS_LIMIT = 1000;
 
@@ -10,6 +12,8 @@ export function mkState(toks: Tok[][]): State {
       pc: 0,
       program: { first: 0, last: 0 },
       defining: true,
+      readingName: false,
+      name: undefined,
     },
     ctl: [],
     ctx: [],
@@ -155,6 +159,13 @@ function doCloseParen(state: State, pc: number): State {
 }
 
 function execInstruction(state: State, inst: Tok, pc: number): State {
+  if (state.cframe.readingName) {
+    return produce(state, s => {
+      s.cframe.name = stringOfTok(inst);
+      s.cframe.readingName = false;
+    });
+  }
+
   switch (inst.t) {
     case 'type': return produce(state, s => {
       s.cframe.program.last = pc;
@@ -177,11 +188,12 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         const emptyProgram: Tok[] = [];
         state = produce(newState, s => {
           s.sig.push({
-            name: inst.name ?? '_',
+            name: state.cframe.name ?? '_',
             klass: elt.term,
             program: state.cframe.program,
           });
           s.cframe.program = { first: pc + 1, last: pc };
+          s.cframe.name = undefined;
         });
         state = doOpenParen(state);
         return state;
@@ -207,7 +219,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         const { elt: mframe, newState: state2 } = popMetaResult;
         ms = state2;
 
-        const name = inst.name;
+        const name = state.cframe.name;
         if (name == undefined) {
           return errorState(state, `expected constant to be named during :`);
         }
@@ -260,9 +272,10 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         if (oldCtx.t != 'ctx')
           return produce(state, s => { s.error = `expected ctx during ->`; });
         const newCtx = produce(oldCtx, c => {
-          c.ctx.push({ name: inst.name, klass: elt.term, range: { first: 0, last: 1 } });
+          c.ctx.push({ name: state.cframe.name, klass: elt.term, range: { first: 0, last: 1 } });
         });
         return produce(newState, s => {
+          s.cframe.name = undefined;
           s.meta[state.meta.length - 1] = newCtx;
         });
       }
@@ -289,9 +302,10 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
           return errorState(state, `expected sub during ->`);
 
         const newSub = produce(oldSub, c => {
-          c.sub.push({ term: elt2.term, name: inst.name, klass: elt1.term, range: { first: 0, last: 1 } });
+          c.sub.push({ term: elt2.term, name: state.cframe.name, klass: elt1.term, range: { first: 0, last: 1 } });
         });
         return produce(state, s => {
+          s.cframe.name = undefined;
           s.meta[state.meta.length - 1] = newSub;
         });
       }
@@ -300,6 +314,11 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
     case '(': return doOpenParen(state);
     case ')': return doCloseParen(state, pc);
 
+    case ':': {
+      return produce(state, s => {
+        s.cframe.readingName = true;
+      });
+    }
     default: return produce(state, s => {
       s.error = `unimplemented instruction ${inst.t}`;
     });

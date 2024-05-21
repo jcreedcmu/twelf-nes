@@ -5,12 +5,13 @@ import Tex from './katex';
 import { CSSProperties } from "react";
 import { Rng, in_range } from "./range";
 
-function stringOfTok(tok: Tok): string {
+export function stringOfTok(tok: Tok): string {
   switch (tok.t) {
     case 'type': return 'type';
-    case '->': return tok.name == undefined ? '->' : `: ${tok.name} ->`;
-    case '.': return tok.name == undefined ? '.' : `: ${tok.name} .`;
+    case '->': return '->';
+    case '.': return '.';
     case 'id': return tok.name;
+    case ':': return ':';
     case '(': return '(';
     case ')': return ')';
     case '[': return '[';

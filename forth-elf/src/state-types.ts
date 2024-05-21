@@ -28,12 +28,13 @@ export type Expr =
 
 export type Tok =
   | { t: 'type' }
-  | { t: '->', name: string | undefined }
+  | { t: '->' }
+  | { t: ':' }
   | { t: '(' }
   | { t: ')' }
   | { t: '[' }
   | { t: ']' }
-  | { t: '.', name: string | undefined }
+  | { t: '.' }
   | { t: 'id', name: string }
   ;
 
@@ -68,6 +69,8 @@ export type CtlEntry = {
   pc: number
   program: Rng,
   defining: boolean,
+  name: string | undefined,
+  readingName: boolean,
 };
 
 
