@@ -59,6 +59,7 @@ export type MetaCtxEntry =
 
 export type CtlEntry = {
   pc: number
+  program: Rng,
 };
 
 

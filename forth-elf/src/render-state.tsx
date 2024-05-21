@@ -1,5 +1,5 @@
 import { tokenToString } from "typescript";
-import { CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from "./state-types";
+import { Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 import Tex from './katex';
 import { CSSProperties } from "react";
@@ -88,11 +88,9 @@ function subToTex(decl: { term: Expr, klass: Expr }): string {
 }
 
 function renderSig(sig: Sig, dispatch: Dispatch): JSX.Element {
-  const newline = "\n";
-
   const str = sig.map(sigent => {
     return <div className="sigbutton" onMouseDown={e => { dispatch({ t: 'setCurrentRange', range: sigent.program }) }}>
-      <Tex expr={declToTex(sigent) + '.'} />{newline}
+      <Tex expr={declToTex(sigent) + '.'} />
     </div>;
   });
   return <div className="sigcontainer">{str}</div>;
@@ -131,6 +129,19 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   });
 
   return <pre>{str}</pre>;
+}
+
+function stringOfCtl(ctl: CtlEntry): string {
+  return `${ctl.pc}`;
+}
+
+function renderCtl(ctl: Ctl): JSX.Element {
+  const str = ctl.map(ctlent => {
+    return <div className="ctlbutton">
+      {stringOfCtl(ctlent)}
+    </div>;
+  });
+  return <div className="ctlcontainer">{str}</div>;
 }
 
 type Lerp = JSX.Element | JSX.Element[];
@@ -180,6 +191,9 @@ export function renderState(state: State, dispatch: Dispatch, currentRange: Rng 
         </div>,
         <div style={tdStyle}>
           <b>Meta</b>:{renderMeta(state.meta)}<br />
+        </div>,
+        <div style={tdStyle}>
+          <b>Ctl</b>:{renderCtl(state.ctl)}<br />
         </div>,
       ];
 
