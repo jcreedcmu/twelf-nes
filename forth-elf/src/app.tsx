@@ -79,11 +79,6 @@ function reduce_inner(state: AppState, action: Action): AppState {
         return state;
       }
     }
-    case 'setCurrentRange': {
-      return produce(state, s => {
-        s.currentSelection = { t: 'range', range: action.range };
-      });
-    }
     case 'setCurrentSig': {
       return produce(state, s => {
         s.currentSelection = { t: 'sigItem', index: action.index };

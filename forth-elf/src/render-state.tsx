@@ -57,7 +57,6 @@ function exprToTex(e: Expr): string {
 
 function isTokenHilighted(state: State, sel: Selection, index: number): boolean {
   switch (sel.t) {
-    case 'range': return in_range(index, sel.range);
     case 'sigItem': return in_range(index, state.sig[sel.index].program);
   }
 }
