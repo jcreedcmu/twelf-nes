@@ -1,9 +1,8 @@
-import { tokenToString } from "typescript";
-import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, SigEntry, Stack, State, SubEntry, Tok } from "./state-types";
-import { Dispatch } from "./state-types";
-import Tex from './katex';
 import { CSSProperties } from "react";
-import { Rng, in_range } from "./range";
+import Tex from './katex';
+import { isExactTok, pcEqual } from "./program-counter";
+import { in_range } from "./range";
+import { Ctl, CtlEntry, CtxEntry, Dispatch, Expr, MetaCtx, MetaCtxEntry, Pc, Selection, Sig, SigEntry, Stack, State, SubEntry, Tok } from "./state-types";
 
 export function stringOfTok(tok: Tok): string {
   switch (tok.t) {
@@ -55,10 +54,10 @@ function exprToTex(e: Expr): string {
   }
 }
 
-function isTokenHilighted(state: State, sel: Selection, pc: number): boolean {
+function isTokenHilighted(state: State, sel: Selection, pc: Pc): boolean {
   switch (sel.t) {
     case 'sigItem': return in_range(pc, state.sig[sel.index].program);
-    case 'ctlItem': return state.ctl[sel.index].pc == pc;
+    case 'ctlItem': return pcEqual(state.ctl[sel.index].pc, pc);
   }
 }
 
@@ -71,12 +70,12 @@ function renderToks(state: State, dispatch: Dispatch, currentSelection: Selectio
   for (const decl of state.origToks) {
     for (const tok of decl) {
       const className = ['token'];
-      if (currentSelection != undefined && isTokenHilighted(state, currentSelection, i)) {
+      if (currentSelection != undefined && isTokenHilighted(state, currentSelection, { t: 'tokstream', index: i })) {
         className.push('hilited');
       }
-      if (state.ctl.find(cf => cf.pc == i)) className.push('latent');
+      if (state.ctl.find(cf => isExactTok(cf.pc, i))) className.push('latent');
 
-      if (i == state.cframe.pc) className.push('active');
+      if (isExactTok(state.cframe.pc, i)) className.push('active');
       const str = stringOfTok(tok);
       const elt = <div className={className.join(' ')} onMouseDown={findPc(i)}>{str}</div>;
       row.push(elt);
@@ -147,6 +146,12 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   return <pre>{str}</pre>;
 }
 
+function renderPc(pc: Pc): string {
+  switch (pc.t) {
+    case 'tokstream': return `${pc.index}`;
+  }
+}
+
 function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
   let name: (JSX.Element | string)[] = [''];
   if (ctl.readingName) {
@@ -163,7 +168,7 @@ function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, 
     className.push('hilited');
   }
   return <span><div className={className.join(' ')} onMouseDown={onMouseDown}>
-    {ctl.pc}
+    {renderPc(ctl.pc)}
   </div>[def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
 }
 

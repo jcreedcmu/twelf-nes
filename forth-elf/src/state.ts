@@ -1,16 +1,17 @@
 import { produce } from 'immer';
-import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
+import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks, Pc } from './state-types';
 import { Rng } from "./range";
 import { tokenToString } from 'typescript';
 import { stringOfTok } from './render-state';
+import { pcNext, pcPrev } from './program-counter';
 
 const ITERATIONS_LIMIT = 1000;
 
 export function mkState(toks: Tok[][]): State {
   return {
     cframe: {
-      pc: 0,
-      program: { first: 0, last: 0 },
+      pc: { t: 'tokstream', index: 0 },
+      program: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 0 } },
       defining: true,
       readingName: false,
       name: undefined,
@@ -116,7 +117,7 @@ function callIdent(state: State, name: string): State {
   }
   return produce(state, s => {
     s.ctl.push(state.cframe);
-    s.cframe.pc = sigent.program.first - 1; // because we'll increment it later
+    s.cframe.pc = pcPrev(sigent.program.first); // because we'll increment it later
     s.cframe.defining = false;
   });
 }
@@ -132,7 +133,7 @@ function doOpenParen(state: State) {
   });
 }
 
-function doCloseParen(state: State, pc: number): State {
+function doCloseParen(state: State, pc: Pc): State {
   const pr1 = popStack(state);
   if (pr1 == undefined)
     return produce(state, s => { s.error = `stack underflow during )`; });
@@ -158,7 +159,7 @@ function doCloseParen(state: State, pc: number): State {
   });
 }
 
-function execInstruction(state: State, inst: Tok, pc: number): State {
+function execInstruction(state: State, inst: Tok, pc: Pc): State {
   if (state.cframe.readingName) {
     return produce(state, s => {
       s.cframe.name = stringOfTok(inst);
@@ -192,7 +193,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
             klass: elt.term,
             program: state.cframe.program,
           });
-          s.cframe.program = { first: pc + 1, last: pc };
+          s.cframe.program = { first: pcNext(pc), last: pc };
           s.cframe.name = undefined;
         });
         state = doOpenParen(state);
@@ -272,7 +273,10 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         if (oldCtx.t != 'ctx')
           return produce(state, s => { s.error = `expected ctx during ->`; });
         const newCtx = produce(oldCtx, c => {
-          c.ctx.push({ name: state.cframe.name, klass: elt.term, range: { first: 0, last: 1 } });
+          c.ctx.push({
+            name: state.cframe.name, klass: elt.term,
+            range: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 1 } }
+          });
         });
         return produce(newState, s => {
           s.cframe.name = undefined;
@@ -304,7 +308,10 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
           return errorState(state, `expected sub during ->`);
 
         const newSub = produce(oldSub, c => {
-          c.sub.push({ term: elt2.term, name: state.cframe.name, klass: elt1.term, range: { first: 0, last: 1 } });
+          c.sub.push({
+            term: elt2.term, name: state.cframe.name, klass: elt1.term,
+            range: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 1 } }
+          });
         });
         return produce(state, s => {
           s.cframe.name = undefined;
@@ -327,13 +334,25 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
   }
 }
 
+function fetch(state: State, pc: Pc): Tok {
+  switch (pc.t) {
+    case 'tokstream': return state.toks[pc.index];
+  }
+}
+
+function pcValid(state: State, pc: Pc): boolean {
+  switch (pc.t) {
+    case 'tokstream': return pc.index < state.toks.length;
+  }
+}
+
 export function stepForward(state: State): State | undefined {
   if (state.error)
     return undefined;
-  state = execInstruction(state, state.toks[state.cframe.pc], state.cframe.pc);
-  state = produce(state, s => { s.cframe.pc++; });
-  if (state.cframe.pc >= state.toks.length) return undefined;
-  return state;
+  state = execInstruction(state, fetch(state, state.cframe.pc), state.cframe.pc);
+  const nextPc = pcNext(state.cframe.pc);
+  if (!pcValid(state, nextPc)) return undefined;
+  return produce(state, s => { s.cframe.pc = nextPc; });
 }
 
 export function run(state: State): State[] {

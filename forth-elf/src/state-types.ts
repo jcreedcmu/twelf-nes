@@ -1,5 +1,9 @@
 import { Rng } from "./range";
 
+export type Pc =
+  | { t: 'tokstream', index: number }
+  ;
+
 export type Action =
   | { t: 'setStep', frame: number }
   | { t: 'changeStep', dframe: number, multi: boolean }
@@ -72,7 +76,7 @@ export type MetaCtxEntry =
   ;
 
 export type CtlEntry = {
-  pc: number
+  pc: Pc
   program: Rng,
   defining: boolean,
   name: string | undefined,
