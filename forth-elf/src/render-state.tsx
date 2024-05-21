@@ -62,7 +62,28 @@ function isTokenHilighted(state: State, sel: Selection, pc: Pc): boolean {
   }
 }
 
-function renderToks(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
+function renderToksForPc(pc: Pc, state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
+  switch (pc.t) {
+    case 'tokstream': return renderToks(pc.index, state, dispatch, currentSelection);
+    case 'sigEntry': return renderToksForSigEntry(pc.tokIx, state.sig[pc.sigIx], state, dispatch, currentSelection);
+  }
+}
+
+function renderToksForSigEntry(offset: number, se: SigEntry, state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
+  let i = 0;
+  const row: JSX.Element[] = [];
+  for (const tok of se.code) {
+    const className = ['token'];
+    if (offset == i) className.push('active');
+    const str = stringOfTok(tok);
+    const elt = <div className={className.join(' ')}>{str}</div>;
+    row.push(elt);
+    i++;
+  }
+  return <div>{row}</div>;
+}
+
+function renderToks(offset: number, state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
   let i = 0;
   function findPc(pc: number): (e: React.MouseEvent) => void {
     return e => dispatch({ t: 'findPc', pc });
@@ -76,7 +97,7 @@ function renderToks(state: State, dispatch: Dispatch, currentSelection: Selectio
       }
       if (state.stack.find(sf => sf.t == 'control' && isExactTok(sf.cframe.pc, i))) className.push('latent');
 
-      if (isExactTok(state.cframe.pc, i)) className.push('active');
+      if (offset == i) className.push('active');
       const str = stringOfTok(tok);
       const elt = <div className={className.join(' ')} onMouseDown={findPc(i)}>{str}</div>;
       row.push(elt);
@@ -251,7 +272,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
 
   function renderAllCode(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
     const pieces: JSX.Element[] = [];
-    pieces.push(renderToks(state, dispatch, currentSelection));
+    pieces.push(renderToksForPc(state.cframe.pc, state, dispatch, currentSelection));
     return <div style={{ display: 'flex', flexDirection: 'column' }}>{pieces}</div>;
   }
 
