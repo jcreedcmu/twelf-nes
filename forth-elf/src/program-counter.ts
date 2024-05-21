@@ -12,6 +12,7 @@ export function isExactTok(pc: Pc, index: number): boolean {
 export function pcNext(pc: Pc): Pc {
   switch (pc.t) {
     case 'tokstream': return { t: 'tokstream', index: pc.index + 1 };
+    case 'sigEntry': return { t: 'sigEntry', sigIx: pc.sigIx, tokIx: pc.tokIx + 1 };
   }
 }
 
@@ -19,5 +20,6 @@ export function pcNext(pc: Pc): Pc {
 export function pcPrev(pc: Pc): Pc {
   switch (pc.t) {
     case 'tokstream': return { t: 'tokstream', index: pc.index - 1 };
+    case 'sigEntry': return { t: 'sigEntry', sigIx: pc.sigIx, tokIx: pc.tokIx - 1 };
   }
 }

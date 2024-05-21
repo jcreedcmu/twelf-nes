@@ -390,12 +390,14 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
 function fetch(state: State, pc: Pc): Tok {
   switch (pc.t) {
     case 'tokstream': return state.toks[pc.index];
+    case 'sigEntry': return state.sig[pc.sigIx].code[pc.tokIx];
   }
 }
 
 function pcValid(state: State, pc: Pc): boolean {
   switch (pc.t) {
     case 'tokstream': return pc.index < state.toks.length;
+    case 'sigEntry': return pc.tokIx < state.sig[pc.sigIx].code.length;
   }
 }
 

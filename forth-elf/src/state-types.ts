@@ -2,6 +2,7 @@ import { Rng } from "./range";
 
 export type Pc =
   | { t: 'tokstream', index: number }
+  | { t: 'sigEntry', sigIx: number, tokIx: number }
   ;
 
 export type Action =

@@ -112,19 +112,19 @@ function renderSig(sig: Sig, dispatch: Dispatch, currentSelection: Selection | u
   return <div className="sigcontainer">{str}</div>;
 }
 
-function renderStackFrame(frame: StackEntry): JSX.Element {
+function renderStackFrame(state: State, frame: StackEntry): JSX.Element {
   switch (frame.t) {
     case 'data':
       return <span><Tex expr={subToTex(frame)} /></span>;
     case 'control':
-      return renderCtlEntry(frame.cframe, undefined, (e) => { }); // XXX these can't be clicked on
+      return renderCtlEntry(state, frame.cframe, undefined, (e) => { }); // XXX these can't be clicked on
   }
 }
 
-function renderStack(stack: Stack): JSX.Element {
+function renderStack(state: State, stack: Stack): JSX.Element {
   const newline = "\n";
 
-  const str = stack.map(renderStackFrame);
+  const str = stack.map(x => renderStackFrame(state, x));
 
   return <div className="stackcontainer">{str}</div>;
 }
@@ -154,13 +154,14 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   return <pre>{str}</pre>;
 }
 
-function renderPc(pc: Pc): string {
+function renderPc(state: State, pc: Pc): string {
   switch (pc.t) {
     case 'tokstream': return `${pc.index}`;
+    case 'sigEntry': return `${state.sig[pc.sigIx].name}:${pc.tokIx}`;
   }
 }
 
-function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
+function renderCtlEntry(state: State, ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
   let name: (JSX.Element | string)[] = [''];
   const code = renderCode(ctl.code);
   if (ctl.readingName) {
@@ -177,7 +178,7 @@ function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, 
     className.push('hilited');
   }
   return <span><div className={className.join(' ')} onMouseDown={onMouseDown}>
-    {renderPc(ctl.pc)}
+    {renderPc(state, ctl.pc)}
   </div>[def: {ctl.defining ? 'T' : 'F'}, {code}{name}]</span>;
 }
 
@@ -240,7 +241,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
           <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
         </div>,
         <div style={tdStyle}>
-          <b>Stack</b>:{renderStack(state.stack)}
+          <b>Stack</b>:{renderStack(state, state.stack)}
         </div>,
         <div style={tdStyle}>
           <b>Meta</b>:{renderMeta(state.meta)}<br />
@@ -256,7 +257,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
 
   const dupCurrentSelection = showDupCurrentSelection(state, currentSelection);
   return <div>
-    <b>Control</b>: {renderCtlEntry(state.cframe, currentSelection, dispatch)}<br />
+    <b>Control</b>: {renderCtlEntry(state, state.cframe, currentSelection, dispatch)}<br />
     {hsplit(
       renderAllCode(state, dispatch, currentSelection),
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
