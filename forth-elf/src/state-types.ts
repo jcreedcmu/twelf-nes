@@ -1,6 +1,7 @@
 import { Rng } from "./range";
 
 export type Action =
+  | { t: 'setStep', frame: number }
   | { t: 'changeStep', dframe: number, multi: boolean }
   | { t: 'findPc', pc: number }
   | { t: 'setCurrentSel', sel: Selection }

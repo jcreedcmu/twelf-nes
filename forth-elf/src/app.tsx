@@ -84,6 +84,12 @@ function reduce_inner(state: AppState, action: Action): AppState {
         s.currentSelection = action.sel;
       });
     }
+    case 'setStep': {
+      return produce(state, s => {
+        s.frame = action.frame;
+        s.currentSelection = undefined;
+      });
+    }
   }
 }
 
@@ -97,7 +103,11 @@ export function mkAppState(input: string): AppState {
 }
 
 export function renderAppState(app: AppState, dispatch: Dispatch): JSX.Element {
-  return <div><b>time</b>: {app.frame}<br /><br />
+  return <div><b>time</b>: {app.frame}<br />
+    <input type="range"
+      min={0} max={app.states.length - 1} style={{ width: '100%' }} value={app.frame}
+      onInput={(e: React.FormEvent<HTMLInputElement>) => { dispatch({ t: 'setStep', frame: parseInt((e.target as HTMLInputElement).value) }) }} />
+    <br />
     {renderState(app.states[app.frame], dispatch, app.currentSelection)}</div>;
 }
 
