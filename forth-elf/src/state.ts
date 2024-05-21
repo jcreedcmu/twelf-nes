@@ -70,6 +70,16 @@ function exprEqual(e1: Expr, e2: Expr) {
 }
 
 
+function callIdent(state: State, name: string): State {
+  return produce(state, s => {
+    s.program.last = state.pc;
+    s.stack.push({
+      term: { t: 'appc', cid: 'o', spine: [] },
+      klass: { t: 'type' }
+    });
+  });
+}
+
 function execInstruction(state: State, inst: Tok, pc: number): State {
   switch (inst.t) {
     case 'type': return produce(state, s => {
@@ -99,13 +109,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
     case 'id': {
       switch (inst.name) {
         case 'o':
-          return produce(state, s => {
-            s.program.last = pc;
-            s.stack.push({
-              term: { t: 'appc', cid: 'o', spine: [] },
-              klass: { t: 'type' }
-            });
-          });
+          return callIdent(state, 'o');
 
         case 'l':
           return produce(state, s => {
