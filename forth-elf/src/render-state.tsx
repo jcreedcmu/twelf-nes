@@ -1,5 +1,5 @@
 import { tokenToString } from "typescript";
-import { Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from "./state-types";
+import { Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, SubEntry, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 import Tex from './katex';
 import { CSSProperties } from "react";
@@ -105,8 +105,8 @@ function renderStack(stack: Stack): JSX.Element {
   return <pre>{str}</pre>;
 }
 
-function texOfSubEntry(e: CtxEntry): string {
-  return `${e.name ?? '\\_'}:${exprToTex(e.klass)}`;
+function texOfSubEntry(e: SubEntry): string {
+  return `[${exprToTex(e.term)}/${e.name ?? '\\_'}]:${exprToTex(e.klass)}`;
 }
 
 function texOfCtxEntry(e: CtxEntry): string {

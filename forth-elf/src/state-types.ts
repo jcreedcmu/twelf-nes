@@ -51,9 +51,16 @@ export type CtxEntry = {
   range: Rng,
 };
 
+export type SubEntry = {
+  name: string | undefined,
+  term: Expr,
+  klass: Expr,
+  range: Rng,
+};
+
 
 export type MetaCtxEntry =
-  | { t: 'sub', sub: Ctx }
+  | { t: 'sub', sub: Sub }
   | { t: 'ctx', ctx: Ctx }
   ;
 
@@ -71,6 +78,7 @@ export type StackEntry = {
 
 export type Sig = SigEntry[];
 export type Ctx = CtxEntry[];
+export type Sub = SubEntry[];
 export type MetaCtx = MetaCtxEntry[];
 export type Ctl = CtlEntry[];
 export type Stack = StackEntry[];
