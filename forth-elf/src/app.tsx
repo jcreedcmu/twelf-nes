@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { useEffectfulReducer } from './use-effectful-reducer';
-import { run, mkState } from './state';
+import { run, mkState, getCtlDepth } from './state';
 import { parse } from './parse';
 import { State } from './state-types';
 import { produce } from 'immer';
@@ -21,13 +21,51 @@ function reduce(state: AppState, action: Action): { state: AppState, effects: Ef
 }
 
 function reduce_inner(state: AppState, action: Action): AppState {
+
+  function depthAt(frame: number) {
+    return getCtlDepth(state.states[frame]);
+  }
+
+  function getChosenFrame(dframe: number): number | undefined {
+    const origDepth = depthAt(state.frame);
+    if (dframe == -1) {
+      for (let i = state.frame - 1; i >= 0; i--) {
+        if (depthAt(i) <= origDepth)
+          return i;
+      }
+      return undefined;
+    }
+    else if (dframe == 1) {
+      for (let i = state.frame + 1; i < state.states.length; i++) {
+        if (depthAt(i) <= origDepth)
+          return i;
+      }
+      return undefined;
+    }
+    else throw new Error(`expected dframe to be +/-1 when using changeStep with multi = true`);
+  }
+
   switch (action.t) {
     case 'changeStep': {
-      const newFrame = Math.max(Math.min(state.frame + action.dframe, state.states.length - 1), 0);
-      return produce(state, s => {
-        s.frame = newFrame;
-        s.currentRange = undefined;
-      });
+      if (action.multi) {
+        const frame = getChosenFrame(action.dframe);
+        if (frame != undefined) {
+          return produce(state, s => {
+            s.frame = frame;
+            s.currentRange = undefined;
+          });
+        }
+        else {
+          return state;
+        }
+      }
+      else {
+        const newFrame = Math.max(Math.min(state.frame + action.dframe, state.states.length - 1), 0);
+        return produce(state, s => {
+          s.frame = newFrame;
+          s.currentRange = undefined;
+        });
+      }
     }
     case 'findPc': {
       const newFrame = state.states.findIndex(state => state.cframe.pc == action.pc);
@@ -67,15 +105,16 @@ function App(props: AppProps): JSX.Element {
   const [state, dispatch] = useEffectfulReducer<Action, AppState, Effect>(mkAppState(props.input), reduce, doEffect);
 
   const keydownListener = (e: KeyboardEvent) => {
+    const multi = e.shiftKey;
     switch (e.code) {
       case 'ArrowLeft': {
-        dispatch({ t: 'changeStep', dframe: -1 });
+        dispatch({ t: 'changeStep', dframe: -1, multi });
         e.stopPropagation();
         e.preventDefault();
         break;
       }
       case 'ArrowRight': {
-        dispatch({ t: 'changeStep', dframe: 1 });
+        dispatch({ t: 'changeStep', dframe: 1, multi });
         e.stopPropagation();
         e.preventDefault();
         break;

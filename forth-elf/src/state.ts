@@ -306,3 +306,7 @@ export function run(state: State): State[] {
   }
   return states;
 }
+
+export function getCtlDepth(state: State): number {
+  return state.ctl.length;
+}
