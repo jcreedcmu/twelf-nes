@@ -62,11 +62,12 @@ function formPi(ctx: Ctx, base: StackEntry): StackEntry {
   for (let i = ctx.length - 1; i >= 0; i--) {
     term = { t: 'pi', name: ctx[i].name, a: ctx[i].klass, b: term };
   }
-  return { term, klass: base.klass };
+  return { t: 'data', term, klass: base.klass };
 }
 
 function formRoot(name: string, sub: Sub, base: StackEntry): StackEntry {
   return {
+    t: 'data',
     term: { t: 'appc', cid: name, spine: sub.map(x => x.term) },
     klass: base.term
   };
@@ -170,7 +171,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
   switch (inst.t) {
     case 'type': return produce(state, s => {
       s.cframe.program.last = pc;
-      s.stack.push({ term: { t: 'type' }, klass: { t: 'kind' } });
+      s.stack.push({ t: 'data', term: { t: 'type' }, klass: { t: 'kind' } });
     });
 
     case '.': {
@@ -250,6 +251,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
           return produce(state, s => {
             s.cframe.program.last = pc;
             s.stack.push({
+              t: 'data',
               term: { t: 'appv', head: inst.name, spine: [] },
               klass: { t: 'appc', cid: 'o', spine: [] },
             });
