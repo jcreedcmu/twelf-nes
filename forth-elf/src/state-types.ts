@@ -40,7 +40,6 @@ export type PosTok = { tok: Tok, range: Range };
 export type SigEntry = {
   name: string,
   klass: Expr,
-  range: Rng, // deprecated
   program: Rng,
 };
 

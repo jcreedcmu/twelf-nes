@@ -88,7 +88,6 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       return produce(newState, s => {
         s.sig.push({
           name: inst.name ?? '_',
-          range: { first: 0, last: 1 },
           klass: elt.term,
           program: state.program,
         });
