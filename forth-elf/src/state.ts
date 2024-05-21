@@ -131,7 +131,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         if (popCtlResult == undefined)
           return errorState(ms, `ctl underflow during :`);
         const { elt: cframe, newState: state0 } = popCtlResult;
-        ms = state;
+        ms = state0;
 
         const popStackResult = popStack(ms);
         if (popStackResult == undefined)
@@ -153,26 +153,10 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 
     case 'id': {
       switch (inst.name) {
-        case 'o':
-          return callIdent(state, 'o');
-
-        case 'l':
-          return produce(state, s => {
-            s.cframe.program.last = pc;
-            s.stack.push({
-              term: { t: 'appc', cid: 'l', spine: [] },
-              klass: { t: 'appc', cid: 'o', spine: [] },
-            });
-          });
-
+        case 'o': // fallthrough intentional
+        case 'l': // fallthrough intentional
         case 'k':
-          return produce(state, s => {
-            s.cframe.program.last = pc;
-            s.stack.push({
-              term: { t: 'appc', cid: 'k', spine: [] },
-              klass: { t: 'appc', cid: 'o', spine: [] },
-            });
-          });
+          return callIdent(state, inst.name);
 
         case 's': {
           const popResult = popStack(state);
