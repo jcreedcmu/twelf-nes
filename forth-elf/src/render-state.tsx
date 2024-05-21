@@ -8,6 +8,7 @@ export function stringOfTok(tok: Tok): string {
   switch (tok.t) {
     case 'type': return '*';
     case '->': return '→';
+    case 'grab': return '▷';
     case 'ret': return '⤶';
     case '.': return '.';
     case 'id': return tok.name;

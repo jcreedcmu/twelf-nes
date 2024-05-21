@@ -40,6 +40,7 @@ export type Expr =
 export type Tok =
   | { t: 'type' }
   | { t: '->' }
+  | { t: 'grab' }
   | { t: ':' }
   | { t: '(' }
   | { t: ')' }

@@ -204,11 +204,72 @@ function doReturn(state: State, pc: Pc): State {
   });
 }
 
+function doGrab(state: State, pc: Pc): State {
+  const popResult1 = popStack(state);
+  if (popResult1 == undefined)
+    return errorState(state, `stack underflow (1) during ->`);
+  const { elt: elt1, newState: ns1 } = popResult1;
+  state = ns1;
+
+  if (elt1.t != 'data') {
+    return errorState(state, `expected data frame on stack`);
+  }
+
+  const popResult3 = popStack(state);
+  if (popResult3 == undefined)
+    return errorState(state, `stack underflow (3) during ->`);
+  const { elt: elt3, newState: ns3 } = popResult3;
+  state = ns3;
+
+  if (elt3.t != 'control') {
+    return errorState(state, `expected control frame on stack`);
+  }
+
+  const popResult2 = popStack(state);
+  if (popResult2 == undefined)
+    return errorState(state, `stack underflow (2) during ->`);
+  const { elt: elt2, newState: ns2 } = popResult2;
+  state = ns2;
+
+  if (elt2.t != 'data') {
+    return errorState(state, `expected data frame on stack`);
+  }
+
+  if (!exprEqual(elt1.term, elt2.klass)) {
+    return errorState(state, `type mismatch`);
+  }
+
+  if (state.meta.length == 0)
+    return errorState(state, `metacontext underflow during ->`);
+
+  const oldSub = state.meta[state.meta.length - 1];
+  if (oldSub.t != 'sub')
+    return errorState(state, `expected sub during ->`);
+
+  const newSub = produce(oldSub, c => {
+    c.sub.push({
+      term: elt2.term, name: state.cframe.name, klass: elt1.term,
+      range: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 1 } }
+    });
+  });
+  return produce(state, s => {
+    s.cframe.name = undefined;
+    s.meta[state.meta.length - 1] = newSub;
+    s.stack.push(elt3);
+  });
+
+}
+
 function execInstruction(state: State, inst: Tok, pc: Pc): State {
   if (state.cframe.defining) {
     if (inst.t == '.') {
       state = produce(state, s => {
         s.cframe.code.push({ t: 'ret' });
+      });
+    }
+    else if (inst.t == '->') {
+      state = produce(state, s => {
+        s.cframe.code.push({ t: 'grab' });
       });
     }
     else {
@@ -232,7 +293,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
     });
 
     case '.': {
-      // XXX eventually deprecated condition?
+      // XXX eventually deprecate
       if (!state.cframe.defining) {
         return doReturn(state, pc);
       }
@@ -296,86 +357,35 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
     }
 
     case '->': {
-      if (state.cframe.defining) {
-        const popResult = popStack(state);
-        if (popResult == undefined)
-          return produce(state, s => { s.error = `stack underflow during ->`; });
-        const { elt, newState } = popResult;
-
-        if (elt.t != 'data') {
-          return errorState(state, `expected data frame on stack`);
-        }
-
-        if (state.meta.length == 0)
-          return produce(state, s => { s.error = `metacontext underflow during ->`; });
-        const oldCtx = state.meta[state.meta.length - 1];
-        if (oldCtx.t != 'ctx')
-          return produce(state, s => { s.error = `expected ctx during ->`; });
-        const newCtx = produce(oldCtx, c => {
-          c.ctx.push({
-            name: state.cframe.name, klass: elt.term,
-            range: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 1 } }
-          });
-        });
-        return produce(newState, s => {
-          s.cframe.name = undefined;
-          s.meta[state.meta.length - 1] = newCtx;
-        });
+      // XXX eventually deprecate
+      if (!state.cframe.defining) {
+        return doGrab(state, pc);
       }
-      else {
-        const popResult1 = popStack(state);
-        if (popResult1 == undefined)
-          return errorState(state, `stack underflow (1) during ->`);
-        const { elt: elt1, newState: ns1 } = popResult1;
-        state = ns1;
 
-        if (elt1.t != 'data') {
-          return errorState(state, `expected data frame on stack`);
-        }
+      const popResult = popStack(state);
+      if (popResult == undefined)
+        return produce(state, s => { s.error = `stack underflow during ->`; });
+      const { elt, newState } = popResult;
 
-        const popResult3 = popStack(state);
-        if (popResult3 == undefined)
-          return errorState(state, `stack underflow (3) during ->`);
-        const { elt: elt3, newState: ns3 } = popResult3;
-        state = ns3;
-
-        if (elt3.t != 'control') {
-          return errorState(state, `expected control frame on stack`);
-        }
-
-        const popResult2 = popStack(state);
-        if (popResult2 == undefined)
-          return errorState(state, `stack underflow (2) during ->`);
-        const { elt: elt2, newState: ns2 } = popResult2;
-        state = ns2;
-
-        if (elt2.t != 'data') {
-          return errorState(state, `expected data frame on stack`);
-        }
-
-        if (!exprEqual(elt1.term, elt2.klass)) {
-          return errorState(state, `type mismatch`);
-        }
-
-        if (state.meta.length == 0)
-          return errorState(state, `metacontext underflow during ->`);
-
-        const oldSub = state.meta[state.meta.length - 1];
-        if (oldSub.t != 'sub')
-          return errorState(state, `expected sub during ->`);
-
-        const newSub = produce(oldSub, c => {
-          c.sub.push({
-            term: elt2.term, name: state.cframe.name, klass: elt1.term,
-            range: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 1 } }
-          });
-        });
-        return produce(state, s => {
-          s.cframe.name = undefined;
-          s.meta[state.meta.length - 1] = newSub;
-          s.stack.push(elt3);
-        });
+      if (elt.t != 'data') {
+        return errorState(state, `expected data frame on stack`);
       }
+
+      if (state.meta.length == 0)
+        return produce(state, s => { s.error = `metacontext underflow during ->`; });
+      const oldCtx = state.meta[state.meta.length - 1];
+      if (oldCtx.t != 'ctx')
+        return produce(state, s => { s.error = `expected ctx during ->`; });
+      const newCtx = produce(oldCtx, c => {
+        c.ctx.push({
+          name: state.cframe.name, klass: elt.term,
+          range: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 1 } }
+        });
+      });
+      return produce(newState, s => {
+        s.cframe.name = undefined;
+        s.meta[state.meta.length - 1] = newCtx;
+      });
     }
 
     case '(': return doOpenParen(state);
@@ -387,9 +397,8 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
       });
     }
 
-    case 'ret': {
-      return doReturn(state, pc);
-    }
+    case 'ret': return doReturn(state, pc);
+    case 'grab': return doGrab(state, pc);
 
     default: return produce(state, s => {
       s.error = `unimplemented instruction ${inst.t}`;
