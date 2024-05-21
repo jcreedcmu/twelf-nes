@@ -11,7 +11,7 @@ export function mkState(toks: Tok[][]): State {
     },
     ctl: [],
     ctx: [],
-    meta: [],
+    meta: [{ t: 'ctx', ctx: [] }],
     sig: [],
     stack: [],
     toks: toks.flatMap(x => x),
@@ -98,6 +98,43 @@ function callIdent(state: State, name: string): State {
   });
 }
 
+function doOpenParen(state: State) {
+  const gamma: MetaCtxEntry = {
+    t: 'ctx',
+    ctx: [],
+  };
+
+  return produce(state, s => {
+    s.meta.push(gamma);
+  });
+}
+
+function doCloseParen(state: State, pc: number): State {
+  const pr1 = popStack(state);
+  if (pr1 == undefined)
+    return produce(state, s => { s.error = `stack underflow during )`; });
+  const { elt: stackEntry, newState: state1 } = pr1;
+
+  if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind') {
+    return produce(state, s => { s.error = `expected classifier on stack during .`; });
+  }
+
+  const pr2 = popMeta(state1);
+  if (pr2 == undefined)
+    return produce(state1, s => { s.error = `metacontext underflow during )`; });
+  const { elt: metaEntry, newState: state2 } = pr2;
+
+  if (metaEntry.t != 'ctx')
+    return produce(state, s => { s.error = `expected ctx during >`; });
+
+  const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
+
+  return produce(state2, s => {
+    s.cframe.program.last = pc;
+    s.stack.push(newStackEntry);
+  });
+}
+
 function execInstruction(state: State, inst: Tok, pc: number): State {
   switch (inst.t) {
     case 'type': return produce(state, s => {
@@ -107,6 +144,10 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 
     case '.': {
       if (state.cframe.defining) {
+        state = doCloseParen(state, pc);
+        if (state.error)
+          return state;
+
         const popResult = popStack(state);
         if (popResult == undefined)
           return produce(state, s => { s.error = `stack underflow during .`; });
@@ -115,7 +156,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
           return produce(state, s => { s.error = `expected classifier on stack during .`; });
         }
         const emptyProgram: Tok[] = [];
-        return produce(newState, s => {
+        state = produce(newState, s => {
           s.sig.push({
             name: inst.name ?? '_',
             klass: elt.term,
@@ -123,6 +164,8 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
           });
           s.cframe.program = { first: pc + 1, last: pc };
         });
+        state = doOpenParen(state);
+        return state;
       }
       else {
         let ms = state;
@@ -234,42 +277,9 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       });
     }
 
-    case '(': {
-      const gamma: MetaCtxEntry = {
-        t: 'ctx',
-        ctx: [],
-      };
+    case '(': return doOpenParen(state);
+    case ')': return doCloseParen(state, pc);
 
-      return produce(state, s => {
-        s.meta.push(gamma);
-      });
-    }
-
-    case ')': {
-      const pr1 = popStack(state);
-      if (pr1 == undefined)
-        return produce(state, s => { s.error = `stack underflow during )`; });
-      const { elt: stackEntry, newState: state1 } = pr1;
-
-      if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind') {
-        return produce(state, s => { s.error = `expected classifier on stack during .`; });
-      }
-
-      const pr2 = popMeta(state1);
-      if (pr2 == undefined)
-        return produce(state1, s => { s.error = `metacontext underflow during )`; });
-      const { elt: metaEntry, newState: state2 } = pr2;
-
-      if (metaEntry.t != 'ctx')
-        return produce(state, s => { s.error = `expected ctx during >`; });
-
-      const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
-
-      return produce(state2, s => {
-        s.cframe.program.last = pc;
-        s.stack.push(newStackEntry);
-      });
-    }
     default: return produce(state, s => {
       s.error = `unimplemented instruction ${inst.t}`;
     });
