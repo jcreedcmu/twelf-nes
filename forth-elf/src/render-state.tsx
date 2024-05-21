@@ -62,19 +62,19 @@ function isTokenHilighted(state: State, sel: Selection, pc: Pc): boolean {
   }
 }
 
-function renderToksForPc(pc: Pc, state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
+function renderToksForPc(pc: Pc, state: State, dispatch: Dispatch, currentSelection: Selection | undefined, active: boolean): JSX.Element {
   switch (pc.t) {
-    case 'tokstream': return renderToks(pc.index, state, dispatch, currentSelection);
-    case 'sigEntry': return renderToksForSigEntry(pc.tokIx, state.sig[pc.sigIx], state, dispatch, currentSelection);
+    case 'tokstream': return renderToks(pc.index, state, dispatch, currentSelection, active);
+    case 'sigEntry': return renderToksForSigEntry(pc.tokIx, state.sig[pc.sigIx], state, dispatch, currentSelection, active);
   }
 }
 
-function renderToksForSigEntry(offset: number, se: SigEntry, state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
+function renderToksForSigEntry(offset: number, se: SigEntry, state: State, dispatch: Dispatch, currentSelection: Selection | undefined, active: boolean): JSX.Element {
   let i = 0;
   const row: JSX.Element[] = [];
   for (const tok of se.code) {
     const className = ['token'];
-    if (offset == i) className.push('active');
+    if (offset == i) className.push(active ? 'active' : 'latent');
     const str = stringOfTok(tok);
     const elt = <div className={className.join(' ')}>{str}</div>;
     row.push(elt);
@@ -83,7 +83,7 @@ function renderToksForSigEntry(offset: number, se: SigEntry, state: State, dispa
   return <div>{row}</div>;
 }
 
-function renderToks(offset: number, state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
+function renderToks(offset: number, state: State, dispatch: Dispatch, currentSelection: Selection | undefined, active: boolean): JSX.Element {
   let i = 0;
   function findPc(pc: number): (e: React.MouseEvent) => void {
     return e => dispatch({ t: 'findPc', pc });
@@ -97,7 +97,7 @@ function renderToks(offset: number, state: State, dispatch: Dispatch, currentSel
       }
       if (state.stack.find(sf => sf.t == 'control' && isExactTok(sf.cframe.pc, i))) className.push('latent');
 
-      if (offset == i) className.push('active');
+      if (offset == i) className.push(active ? 'active' : 'latent');
       const str = stringOfTok(tok);
       const elt = <div className={className.join(' ')} onMouseDown={findPc(i)}>{str}</div>;
       row.push(elt);
@@ -272,7 +272,14 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
 
   function renderAllCode(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
     const pieces: JSX.Element[] = [];
-    pieces.push(renderToksForPc(state.cframe.pc, state, dispatch, currentSelection));
+    for (const sf of state.stack) {
+      if (sf.t == 'control') {
+        pieces.push(renderToksForPc(sf.cframe.pc, state, dispatch, currentSelection, false));
+        pieces.push(<div style={{ width: '100%', height: 1, margin: '1em 0em', backgroundColor: 'gray' }} />);
+      }
+    }
+    pieces.push(renderToksForPc(state.cframe.pc, state, dispatch, currentSelection, true));
+
     return <div style={{ display: 'flex', flexDirection: 'column' }}>{pieces}</div>;
   }
 

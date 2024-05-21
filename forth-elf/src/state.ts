@@ -120,30 +120,6 @@ function callSigIdent(state: State, name: string): State {
   });
 }
 
-function callIdent(state: State, name: string): State {
-
-  const sigma: MetaCtxEntry = {
-    t: 'sub',
-    sub: [],
-  };
-
-  state = produce(state, s => {
-    s.meta.push(sigma);
-  });
-
-  const sigent = state.sig.find(se => se.name == name);
-  if (sigent == undefined) {
-    return errorState(state, `couldn't find ${name}`);
-  }
-  const cframe: StackEntry = { t: 'control', cframe: state.cframe };
-  return produce(state, s => {
-    s.stack.push(cframe);
-    s.cframe.code = [];
-    s.cframe.pc = pcPrev(sigent.program.first); // because we'll increment it later
-    s.cframe.defining = false;
-  });
-}
-
 function doOpenParen(state: State) {
   const gamma: MetaCtxEntry = {
     t: 'ctx',
@@ -295,13 +271,12 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
     case 'id': {
       switch (inst.name) {
-        case 'o':
-          return callSigIdent(state, inst.name);
+        case 'o': // fallthrough intentional
         case 'l': // fallthrough intentional
         case 's': // fallthrough intentional
         case 'b': // fallthrough intentional
         case 'k':
-          return callIdent(state, inst.name);
+          return callSigIdent(state, inst.name);
 
         case 'x': // fallthrough intentional
         case 'y':
