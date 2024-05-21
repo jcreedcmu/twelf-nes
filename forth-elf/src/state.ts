@@ -91,6 +91,29 @@ function errorState(state: State, msg: string): State {
   return produce(state, s => { s.error = msg; });
 }
 
+function callSigIdent(state: State, name: string): State {
+  const sigma: MetaCtxEntry = {
+    t: 'sub',
+    sub: [],
+  };
+
+  state = produce(state, s => {
+    s.meta.push(sigma);
+  });
+
+  const sigent = state.sig.findIndex(se => se.name == name);
+  if (sigent == -1) {
+    return errorState(state, `couldn't find ${name}`);
+  }
+  const cframe: StackEntry = { t: 'control', cframe: state.cframe };
+  return produce(state, s => {
+    s.stack.push(cframe);
+    s.cframe.code = [];
+    s.cframe.pc = pcPrev({ t: 'sigEntry', sigIx: sigent, tokIx: 0 }); // -1 because we'll increment it later
+    s.cframe.defining = false;
+  });
+}
+
 function callIdent(state: State, name: string): State {
 
   const sigma: MetaCtxEntry = {
@@ -266,7 +289,8 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
     case 'id': {
       switch (inst.name) {
-        case 'o': // fallthrough intentional
+        case 'o':
+          return callSigIdent(state, inst.name);
         case 'l': // fallthrough intentional
         case 's': // fallthrough intentional
         case 'b': // fallthrough intentional
@@ -381,6 +405,11 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
         s.cframe.readingName = true;
       });
     }
+
+    case 'ret': {
+      return doReturn(state, pc);
+    }
+
     default: return produce(state, s => {
       s.error = `unimplemented instruction ${inst.t}`;
     });
@@ -404,7 +433,10 @@ function pcValid(state: State, pc: Pc): boolean {
 export function stepForward(state: State): State | undefined {
   if (state.error)
     return undefined;
-  state = execInstruction(state, fetch(state, state.cframe.pc), state.cframe.pc);
+  const inst = fetch(state, state.cframe.pc);
+  if (inst == undefined)
+    return errorState(state, 'undefined instruction');
+  state = execInstruction(state, inst, state.cframe.pc);
   const nextPc = pcNext(state.cframe.pc);
   if (!pcValid(state, nextPc)) return undefined;
   return produce(state, s => { s.cframe.pc = nextPc; });
