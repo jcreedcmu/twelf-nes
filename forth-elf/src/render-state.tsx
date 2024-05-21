@@ -2,7 +2,7 @@ import { CSSProperties } from "react";
 import Tex from './katex';
 import { isExactTok, pcEqual } from "./program-counter";
 import { in_range } from "./range";
-import { Ctl, CtlEntry, CtxEntry, Dispatch, Expr, MetaCtx, MetaCtxEntry, Pc, Selection, Sig, SigEntry, Stack, State, SubEntry, Tok } from "./state-types";
+import { Ctl, CtlEntry, CtxEntry, Dispatch, Expr, MetaCtx, MetaCtxEntry, Pc, Selection, Sig, SigEntry, Stack, StackEntry, State, SubEntry, Tok } from "./state-types";
 
 export function stringOfTok(tok: Tok): string {
   switch (tok.t) {
@@ -111,12 +111,19 @@ function renderSig(sig: Sig, dispatch: Dispatch, currentSelection: Selection | u
   return <div className="sigcontainer">{str}</div>;
 }
 
+function renderStackFrame(frame: StackEntry): JSX.Element {
+  switch (frame.t) {
+    case 'data':
+      return <span><Tex expr={subToTex(frame)} /></span>;
+    case 'control':
+      return renderCtlEntry(frame.cframe, undefined, (e) => { }); // XXX these can't be clicked on
+  }
+}
+
 function renderStack(stack: Stack): JSX.Element {
   const newline = "\n";
 
-  const str = stack.map(e => {
-    return <span><Tex expr={subToTex(e)} />{newline}</span>;
-  });
+  const str = stack.map(renderStackFrame);
 
   return <pre>{str}</pre>;
 }

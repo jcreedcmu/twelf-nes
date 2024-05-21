@@ -84,8 +84,15 @@ export type CtlEntry = {
 };
 
 
+export type DataStackEntry = {
+  t: 'data',
+  term: Expr,
+  klass: Expr
+};
+
 export type StackEntry =
-  | { t: 'data', term: Expr, klass: Expr };
+  | DataStackEntry
+  | { t: 'control', cframe: CtlEntry };
 
 export type Sig = SigEntry[];
 export type Ctx = CtxEntry[];

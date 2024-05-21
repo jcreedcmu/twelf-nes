@@ -1,5 +1,5 @@
 import { produce } from 'immer';
-import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks, Pc } from './state-types';
+import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks, Pc, DataStackEntry } from './state-types';
 import { Rng } from "./range";
 import { tokenToString } from 'typescript';
 import { stringOfTok } from './render-state';
@@ -57,7 +57,7 @@ function popMeta(state: State): undefined | { elt: MetaCtxEntry, newState: State
   return { elt, newState };
 }
 
-function formPi(ctx: Ctx, base: StackEntry): StackEntry {
+function formPi(ctx: Ctx, base: DataStackEntry): StackEntry {
   let term = base.term;
   for (let i = ctx.length - 1; i >= 0; i--) {
     term = { t: 'pi', name: ctx[i].name, a: ctx[i].klass, b: term };
@@ -65,7 +65,7 @@ function formPi(ctx: Ctx, base: StackEntry): StackEntry {
   return { t: 'data', term, klass: base.klass };
 }
 
-function formRoot(name: string, sub: Sub, base: StackEntry): StackEntry {
+function formRoot(name: string, sub: Sub, base: DataStackEntry): StackEntry {
   return {
     t: 'data',
     term: { t: 'appc', cid: name, spine: sub.map(x => x.term) },
@@ -140,6 +140,10 @@ function doCloseParen(state: State, pc: Pc): State {
     return produce(state, s => { s.error = `stack underflow during )`; });
   const { elt: stackEntry, newState: state1 } = pr1;
 
+  if (stackEntry.t != 'data') {
+    return errorState(state, `expected data frame on stack`);
+  }
+
   if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind') {
     return produce(state, s => { s.error = `expected classifier on stack during .`; });
   }
@@ -184,6 +188,11 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
         if (popResult == undefined)
           return produce(state, s => { s.error = `stack underflow during .`; });
         const { elt, newState } = popResult;
+
+        if (elt.t != 'data') {
+          return errorState(state, `expected data frame on stack`);
+        }
+
         if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
           return produce(state, s => { s.error = `expected classifier on stack during .`; });
         }
@@ -214,6 +223,10 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
           return errorState(state, `ctl underflow during :`);
         const { elt: sframe, newState: state1 } = popStackResult;
         ms = state1;
+
+        if (sframe.t != 'data') {
+          return errorState(state, `expected data frame on stack`);
+        }
 
         const popMetaResult = popMeta(ms);
         if (popMetaResult == undefined)
@@ -269,6 +282,11 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
         if (popResult == undefined)
           return produce(state, s => { s.error = `stack underflow during ->`; });
         const { elt, newState } = popResult;
+
+        if (elt.t != 'data') {
+          return errorState(state, `expected data frame on stack`);
+        }
+
         if (state.meta.length == 0)
           return produce(state, s => { s.error = `metacontext underflow during ->`; });
         const oldCtx = state.meta[state.meta.length - 1];
@@ -292,11 +310,19 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
         const { elt: elt1, newState: ns1 } = popResult1;
         state = ns1;
 
+        if (elt1.t != 'data') {
+          return errorState(state, `expected data frame on stack`);
+        }
+
         const popResult2 = popStack(state);
         if (popResult2 == undefined)
           return errorState(state, `stack underflow (2) during ->`);
         const { elt: elt2, newState: ns2 } = popResult2;
         state = ns2;
+
+        if (elt2.t != 'data') {
+          return errorState(state, `expected data frame on stack`);
+        }
 
         if (!exprEqual(elt1.term, elt2.klass)) {
           return errorState(state, `type mismatch`);
