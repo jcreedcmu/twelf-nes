@@ -28,7 +28,7 @@ export type Expr =
 
 export type Tok =
   | { t: 'type' }
-  | { t: '>', name: string | undefined }
+  | { t: '->', name: string | undefined }
   | { t: '(' }
   | { t: ')' }
   | { t: '[' }

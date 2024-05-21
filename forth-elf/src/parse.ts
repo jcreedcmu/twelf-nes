@@ -15,7 +15,7 @@ function parseToks(toks: string[]): Tok[] {
       case '[': out.push({ t: '[' }); break;
       case ']': out.push({ t: ']' }); break;
       case ':': name = toks[++i]; break;
-      case '>': out.push({ t: '>', name }); name = undefined; break;
+      case '->': out.push({ t: '->', name }); name = undefined; break;
       case '.': out.push({ t: '.', name }); name = undefined; break;
       default:
         out.push({ t: 'id', name: toks[i] });

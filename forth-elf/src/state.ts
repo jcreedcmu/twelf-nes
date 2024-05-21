@@ -183,7 +183,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       }
     }
 
-    case '>': {
+    case '->': {
       const popResult = popStack(state);
       if (popResult == undefined)
         return produce(state, s => { s.error = `stack underflow during >`; });
