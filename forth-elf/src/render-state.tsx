@@ -7,8 +7,8 @@ import { Rng, in_range } from "./range";
 
 export function stringOfTok(tok: Tok): string {
   switch (tok.t) {
-    case 'type': return 'type';
-    case '->': return '->';
+    case 'type': return '*';
+    case '->': return '→';
     case '.': return '.';
     case 'id': return tok.name;
     case ':': return ':';
@@ -251,6 +251,6 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
       0.20
     )}<br />
-    {dupCurrentSelection}
+    <center>{dupCurrentSelection}</center>
   </div>;
 }
