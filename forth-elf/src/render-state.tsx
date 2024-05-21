@@ -56,8 +56,8 @@ function exprToTex(e: Expr): string {
 
 function renderToks(state: State, dispatch: Dispatch, currentRange: Rng | undefined): JSX.Element {
   let i = 0;
-  function setStep(i: number): (e: React.MouseEvent) => void {
-    return e => dispatch({ t: 'setStep', frame: i });
+  function findPc(pc: number): (e: React.MouseEvent) => void {
+    return e => dispatch({ t: 'findPc', pc });
   }
   const row: JSX.Element[] = [];
   for (const decl of state.origToks) {
@@ -69,7 +69,7 @@ function renderToks(state: State, dispatch: Dispatch, currentRange: Rng | undefi
       }
       if (i == state.pc) className.push('active');
       const str = stringOfTok(tok);
-      const elt = <div className={className.join(' ')} onMouseDown={setStep(i)}>{str}</div>;
+      const elt = <div className={className.join(' ')} onMouseDown={findPc(i)}>{str}</div>;
       row.push(elt);
       i++;
     }

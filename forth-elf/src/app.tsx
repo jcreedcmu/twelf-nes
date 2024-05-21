@@ -29,12 +29,17 @@ function reduce_inner(state: AppState, action: Action): AppState {
         s.currentRange = undefined;
       });
     }
-    case 'setStep': {
-      const newFrame = Math.max(Math.min(action.frame, state.states.length - 1), 0);
-      return produce(state, s => {
-        s.frame = newFrame;
-        s.currentRange = undefined;
-      });
+    case 'findPc': {
+      const newFrame = state.states.findIndex(state => state.pc == action.pc);
+      if (newFrame != -1) {
+        return produce(state, s => {
+          s.frame = newFrame;
+          s.currentRange = undefined;
+        });
+      }
+      else {
+        return state;
+      }
     }
     case 'setCurrentRange': {
       return produce(state, s => {

@@ -2,7 +2,7 @@ import { Rng } from "./range";
 
 export type Action =
   | { t: 'changeStep', dframe: number }
-  | { t: 'setStep', frame: number }
+  | { t: 'findPc', pc: number }
   | { t: 'setCurrentRange', range: Rng }
   ;
 
