@@ -98,7 +98,6 @@ export type Sig = SigEntry[];
 export type Ctx = CtxEntry[];
 export type Sub = SubEntry[];
 export type MetaCtx = MetaCtxEntry[];
-export type Ctl = CtlEntry[];
 export type Stack = StackEntry[];
 export type Toks = Tok[];
 
@@ -107,7 +106,6 @@ export type State = {
   sig: Sig,
   ctx: Ctx,
   meta: MetaCtx,
-  ctl: Ctl,
   stack: Stack,
   toks: Toks,
   origToks: Toks[], // organized by decl, useful for debugging

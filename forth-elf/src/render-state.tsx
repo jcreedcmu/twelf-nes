@@ -2,7 +2,7 @@ import { CSSProperties } from "react";
 import Tex from './katex';
 import { isExactTok, pcEqual } from "./program-counter";
 import { in_range } from "./range";
-import { Ctl, CtlEntry, CtxEntry, Dispatch, Expr, MetaCtx, MetaCtxEntry, Pc, Selection, Sig, SigEntry, Stack, StackEntry, State, SubEntry, Tok } from "./state-types";
+import { CtlEntry, CtxEntry, Dispatch, Expr, MetaCtx, MetaCtxEntry, Pc, Selection, Sig, SigEntry, Stack, StackEntry, State, SubEntry, Tok } from "./state-types";
 
 export function stringOfTok(tok: Tok): string {
   switch (tok.t) {
@@ -57,7 +57,7 @@ function exprToTex(e: Expr): string {
 function isTokenHilighted(state: State, sel: Selection, pc: Pc): boolean {
   switch (sel.t) {
     case 'sigItem': return in_range(pc, state.sig[sel.index].program);
-    case 'ctlItem': return pcEqual(state.ctl[sel.index].pc, pc);
+    case 'ctlItem': return false; // pcEqual(state.ctl[sel.index].pc, pc); // XXX?
   }
 }
 
@@ -73,7 +73,7 @@ function renderToks(state: State, dispatch: Dispatch, currentSelection: Selectio
       if (currentSelection != undefined && isTokenHilighted(state, currentSelection, { t: 'tokstream', index: i })) {
         className.push('hilited');
       }
-      if (state.ctl.find(cf => isExactTok(cf.pc, i))) className.push('latent');
+      if (state.stack.find(sf => sf.t == 'control' && isExactTok(sf.cframe.pc, i))) className.push('latent');
 
       if (isExactTok(state.cframe.pc, i)) className.push('active');
       const str = stringOfTok(tok);
@@ -179,12 +179,6 @@ function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, 
   </div>[def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
 }
 
-function renderCtl(ctl: Ctl, currentSelection: Selection | undefined, dispatch: Dispatch): JSX.Element {
-  const str = ctl.map((ce, index) => renderCtlEntry(ce, currentSelection, dispatch, index));
-
-  return <div className="ctlcontainer">{str}</div>;
-}
-
 type Lerp = JSX.Element | JSX.Element[];
 function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
   frac = frac ?? 0.5;
@@ -233,9 +227,6 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
   else {
     stateRepn =
       [
-        <div style={tdStyle}>
-          <b>Ctl</b>:{renderCtl(state.ctl, currentSelection, dispatch)}<br />
-        </div>,
         <div style={tdStyle}>
           <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
         </div>,

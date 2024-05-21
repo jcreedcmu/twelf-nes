@@ -16,7 +16,6 @@ export function mkState(toks: Tok[][]): State {
       readingName: false,
       name: undefined,
     },
-    ctl: [],
     ctx: [],
     meta: [{ t: 'ctx', ctx: [] }],
     sig: [],
@@ -33,16 +32,6 @@ function popStack(state: State): undefined | { elt: StackEntry, newState: State 
   const elt = state.stack.at(-1)!;
   const newState = produce(state, s => {
     s.stack.pop();
-  });
-  return { elt, newState };
-}
-
-function popCtl(state: State): undefined | { elt: CtlEntry, newState: State } {
-  if (state.ctl.length == 0)
-    return undefined;
-  const elt = state.ctl.at(-1)!;
-  const newState = produce(state, s => {
-    s.ctl.pop();
   });
   return { elt, newState };
 }
@@ -116,8 +105,9 @@ function callIdent(state: State, name: string): State {
   if (sigent == undefined) {
     return errorState(state, `couldn't find ${name}`);
   }
+  const cframe: StackEntry = { t: 'control', cframe: state.cframe };
   return produce(state, s => {
-    s.ctl.push(state.cframe);
+    s.stack.push(cframe);
     s.cframe.pc = pcPrev(sigent.program.first); // because we'll increment it later
     s.cframe.defining = false;
   });
@@ -212,21 +202,24 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
       else {
         let ms = state;
 
-        const popCtlResult = popCtl(ms);
-        if (popCtlResult == undefined)
-          return errorState(ms, `ctl underflow during :`);
-        const { elt: cframe, newState: state0 } = popCtlResult;
-        ms = state0;
-
         const popStackResult = popStack(ms);
         if (popStackResult == undefined)
-          return errorState(state, `ctl underflow during :`);
+          return errorState(state, `data underflow during :`);
         const { elt: sframe, newState: state1 } = popStackResult;
         ms = state1;
 
         if (sframe.t != 'data') {
           return errorState(state, `expected data frame on stack`);
         }
+
+        const popCtlResult = popStack(ms);
+        if (popCtlResult == undefined)
+          return errorState(ms, `ctl underflow during :`);
+        const { elt: celt, newState: state0 } = popCtlResult;
+        if (celt.t != 'control') {
+          return errorState(state, `expected control frame on stack`);
+        }
+        ms = state0;
 
         const popMetaResult = popMeta(ms);
         if (popMetaResult == undefined)
@@ -244,7 +237,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
         }
 
         return produce(ms, s => {
-          s.cframe = cframe;
+          s.cframe = celt.cframe;
           s.stack.push(formRoot(name, mframe.sub, sframe));
         });
       }
@@ -314,6 +307,16 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
           return errorState(state, `expected data frame on stack`);
         }
 
+        const popResult3 = popStack(state);
+        if (popResult3 == undefined)
+          return errorState(state, `stack underflow (3) during ->`);
+        const { elt: elt3, newState: ns3 } = popResult3;
+        state = ns3;
+
+        if (elt3.t != 'control') {
+          return errorState(state, `expected control frame on stack`);
+        }
+
         const popResult2 = popStack(state);
         if (popResult2 == undefined)
           return errorState(state, `stack underflow (2) during ->`);
@@ -344,6 +347,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
         return produce(state, s => {
           s.cframe.name = undefined;
           s.meta[state.meta.length - 1] = newSub;
+          s.stack.push(elt3);
         });
       }
     }
@@ -396,5 +400,5 @@ export function run(state: State): State[] {
 }
 
 export function getCtlDepth(state: State): number {
-  return state.ctl.length;
+  return state.stack.filter(x => x.t == 'control').length;
 }
