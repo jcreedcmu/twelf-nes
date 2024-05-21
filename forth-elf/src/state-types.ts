@@ -1,10 +1,12 @@
 export type Action =
   | { t: 'changeStep', dframe: number }
   | { t: 'setStep', frame: number }
+  | { t: 'setCurrentRange', range: Rng }
   ;
 
 export type AppState = {
   frame: number,
+  currentRange: Rng | undefined,
   states: State[],
 }
 

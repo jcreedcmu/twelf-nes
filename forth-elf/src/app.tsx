@@ -26,12 +26,19 @@ function reduce_inner(state: AppState, action: Action): AppState {
       const newFrame = Math.max(Math.min(state.frame + action.dframe, state.states.length - 1), 0);
       return produce(state, s => {
         s.frame = newFrame;
+        state.currentRange = undefined;
       });
     }
     case 'setStep': {
       const newFrame = Math.max(Math.min(action.frame, state.states.length - 1), 0);
       return produce(state, s => {
         s.frame = newFrame;
+        state.currentRange = undefined;
+      });
+    }
+    case 'setCurrentRange': {
+      return produce(state, s => {
+        state.currentRange = action.range;
       });
     }
   }
@@ -42,6 +49,7 @@ export function mkAppState(input: string): AppState {
   return {
     frame: 0,
     states,
+    currentRange: undefined,
   }
 }
 

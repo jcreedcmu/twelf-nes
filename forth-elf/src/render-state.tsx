@@ -86,8 +86,10 @@ function subToTex(decl: { term: Expr, klass: Expr }): string {
 function renderSig(sig: Sig, dispatch: Dispatch): JSX.Element {
   const newline = "\n";
 
-  const str = sig.map(e => {
-    return <div className="sigbutton"><Tex expr={declToTex(e) + '.'} />{newline}</div>;
+  const str = sig.map(sigent => {
+    return <div className="sigbutton" onMouseDown={e => { dispatch({ t: 'setCurrentRange', range: sigent.program }) }}>
+      <Tex expr={declToTex(sigent) + '.'} />{newline}
+    </div>;
   });
   return <div className="sigcontainer">{str}</div>;
 }
