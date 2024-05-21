@@ -125,7 +125,7 @@ function renderStack(stack: Stack): JSX.Element {
 
   const str = stack.map(renderStackFrame);
 
-  return <pre>{str}</pre>;
+  return <div className="stackcontainer">{str}</div>;
 }
 
 function texOfSubEntry(e: SubEntry): string {
