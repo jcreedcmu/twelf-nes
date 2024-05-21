@@ -3,11 +3,13 @@ import { Rng } from "./range";
 export type Action =
   | { t: 'changeStep', dframe: number, multi: boolean }
   | { t: 'findPc', pc: number }
-  | { t: 'setCurrentRange', range: Rng }
+  | { t: 'setCurrentRange', range: Rng } // deprecated
+  | { t: 'setCurrentSig', index: number }
   ;
 
 export type Selection =
-  | { t: 'range', range: Rng }
+  | { t: 'range', range: Rng } // deprecated
+  | { t: 'sigItem', index: number }
   ;
 
 export type AppState = {

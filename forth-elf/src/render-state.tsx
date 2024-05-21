@@ -58,6 +58,7 @@ function exprToTex(e: Expr): string {
 function isTokenHilighted(state: State, sel: Selection, index: number): boolean {
   switch (sel.t) {
     case 'range': return in_range(index, sel.range);
+    case 'sigItem': return in_range(index, state.sig[sel.index].program);
   }
 }
 
@@ -93,8 +94,8 @@ function subToTex(decl: { term: Expr, klass: Expr }): string {
 }
 
 function renderSig(sig: Sig, dispatch: Dispatch): JSX.Element {
-  const str = sig.map(sigent => {
-    return <div className="sigbutton" onMouseDown={e => { dispatch({ t: 'setCurrentRange', range: sigent.program }) }}>
+  const str = sig.map((sigent, index) => {
+    return <div className="sigbutton" onMouseDown={e => { dispatch({ t: 'setCurrentSig', index }) }}>
       <Tex expr={declToTex(sigent) + '.'} />
     </div>;
   });
