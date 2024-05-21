@@ -68,7 +68,6 @@ function renderToks(state: State, dispatch: Dispatch, currentRange: Rng | undefi
         className.push('hilited');
       }
       if (i == state.pc) className.push('active');
-      if (i < state.pc) className.push('executed');
       const str = stringOfTok(tok);
       const elt = <div className={className.join(' ')} onMouseDown={setStep(i)}>{str}</div>;
       row.push(elt);

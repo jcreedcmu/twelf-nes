@@ -18,13 +18,8 @@
   background-color: #ffdd00;
 }
 
-.executed {
-  opacity: 40%;
-}
-
 .token.hilited {
   background-color: #cfffff;
-  opacity: 100%;
 }
 
 .sigbutton {
