@@ -79,9 +79,9 @@ function reduce_inner(state: AppState, action: Action): AppState {
         return state;
       }
     }
-    case 'setCurrentSig': {
+    case 'setCurrentSel': {
       return produce(state, s => {
-        s.currentSelection = { t: 'sigItem', index: action.index };
+        s.currentSelection = action.sel;
       });
     }
   }

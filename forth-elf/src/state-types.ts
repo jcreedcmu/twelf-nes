@@ -3,11 +3,12 @@ import { Rng } from "./range";
 export type Action =
   | { t: 'changeStep', dframe: number, multi: boolean }
   | { t: 'findPc', pc: number }
-  | { t: 'setCurrentSig', index: number }
+  | { t: 'setCurrentSel', sel: Selection }
   ;
 
 export type Selection =
   | { t: 'sigItem', index: number }
+  | { t: 'ctlItem', index: number }
   ;
 
 export type AppState = {

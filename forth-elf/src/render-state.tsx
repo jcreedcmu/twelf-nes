@@ -55,9 +55,10 @@ function exprToTex(e: Expr): string {
   }
 }
 
-function isTokenHilighted(state: State, sel: Selection, index: number): boolean {
+function isTokenHilighted(state: State, sel: Selection, pc: number): boolean {
   switch (sel.t) {
-    case 'sigItem': return in_range(index, state.sig[sel.index].program);
+    case 'sigItem': return in_range(pc, state.sig[sel.index].program);
+    case 'ctlItem': return state.ctl[sel.index].pc == pc;
   }
 }
 
@@ -98,7 +99,7 @@ function renderSig(sig: Sig, dispatch: Dispatch, currentSelection: Selection | u
     if (currentSelection !== undefined && currentSelection.t == 'sigItem' && index == currentSelection.index) {
       buttonClass.push('hilited');
     }
-    return <div className={buttonClass.join(' ')} onMouseDown={e => { dispatch({ t: 'setCurrentSig', index }) }}>
+    return <div className={buttonClass.join(' ')} onMouseDown={e => { dispatch({ t: 'setCurrentSel', sel: { t: 'sigItem', index } }) }}>
       <Tex expr={declToTex(sigent) + '.'} />
     </div>;
   });
@@ -157,7 +158,7 @@ function renderCtlEntry(ctl: CtlEntry, dispatch: Dispatch, action?: Action): JSX
 }
 
 function renderCtl(ctl: Ctl, dispatch: Dispatch): JSX.Element {
-  const str = ctl.map((ce, i) => renderCtlEntry(ce, dispatch));
+  const str = ctl.map((ce, index) => renderCtlEntry(ce, dispatch, { t: 'setCurrentSel', sel: { t: 'ctlItem', index } }));
 
   return <div className="ctlcontainer">{str}</div>;
 }
