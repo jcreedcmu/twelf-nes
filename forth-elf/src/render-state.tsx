@@ -1,5 +1,5 @@
 import { tokenToString } from "typescript";
-import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, Stack, State, SubEntry, Tok } from "./state-types";
+import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, SigEntry, Stack, State, SubEntry, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 import Tex from './katex';
 import { CSSProperties } from "react";
@@ -93,6 +93,10 @@ function declToTex(decl: { name: string, klass: Expr }): string {
 
 function subToTex(decl: { term: Expr, klass: Expr }): string {
   return `${exprToTex(decl.term)} : ${exprToTex(decl.klass)}`;
+}
+
+function renderSigEntry(sigent: SigEntry): JSX.Element {
+  return <Tex expr={declToTex(sigent)} />;
 }
 
 function renderSig(sig: Sig, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
@@ -191,6 +195,15 @@ function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
   return <div style={s}><div style={s1} >{x}</div><div style={s2} >{y}</div></div>;
 }
 
+export function showDupCurrentSelection(state: State, currentSelection: Selection | undefined): JSX.Element | undefined {
+  if (currentSelection == undefined)
+    return undefined;
+  switch (currentSelection.t) {
+    case 'sigItem': return renderSigEntry(state.sig[currentSelection.index]);
+    case 'ctlItem': return undefined;
+  }
+}
+
 export function renderState(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
   let stateRepn: JSX.Element[];
   const tdStyle: CSSProperties = {
@@ -229,11 +242,15 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
      * /} ${stringOfMeta(state.meta)}
      * `; */
   }
+
+  const dupCurrentSelection = showDupCurrentSelection(state, currentSelection);
   return <div>
     <b>Control</b>: {renderCtlEntry(state.cframe, currentSelection, dispatch)}<br />
     {hsplit(
       renderToks(state, dispatch, currentSelection),
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
       0.20
-    )}</div>;
+    )}<br />
+    {dupCurrentSelection}
+  </div>;
 }
