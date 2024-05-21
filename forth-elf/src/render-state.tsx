@@ -92,9 +92,13 @@ function subToTex(decl: { term: Expr, klass: Expr }): string {
   return `${exprToTex(decl.term)} : ${exprToTex(decl.klass)}`;
 }
 
-function renderSig(sig: Sig, dispatch: Dispatch): JSX.Element {
+function renderSig(sig: Sig, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
   const str = sig.map((sigent, index) => {
-    return <div className="sigbutton" onMouseDown={e => { dispatch({ t: 'setCurrentSig', index }) }}>
+    const buttonClass = ["sigbutton"];
+    if (currentSelection !== undefined && currentSelection.t == 'sigItem' && index == currentSelection.index) {
+      buttonClass.push('hilited');
+    }
+    return <div className={buttonClass.join(' ')} onMouseDown={e => { dispatch({ t: 'setCurrentSig', index }) }}>
       <Tex expr={declToTex(sigent) + '.'} />
     </div>;
   });
@@ -195,7 +199,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
     stateRepn =
       [
         <div style={tdStyle}>
-          <b>Sig</b>:{renderSig(state.sig, dispatch)}
+          <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
         </div>,
         <div style={tdStyle}>
           <b>Stack</b>:{renderStack(state.stack)}

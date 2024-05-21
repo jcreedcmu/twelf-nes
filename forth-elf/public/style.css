@@ -13,12 +13,7 @@
   background-color: #ddffff;
 }
 
-.active, .active:hover {
-  border-color: #444;
-  background-color: #ffdd00;
-}
-
-.token.hilited {
+.hilited {
   background-color: #cfffff;
 }
 
@@ -31,6 +26,19 @@
   display: inline-block;
   cursor: pointer;
   user-select: none;
+}
+
+.active {
+  border-color: #444;
+  background-color: #ffdd00;
+}
+
+.active.hilited {
+  background-color: #effd40;
+}
+
+.active:hover {
+  background-color: #ffdd00;
 }
 
 .sigcontainer {
