@@ -131,16 +131,22 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   return <pre>{str}</pre>;
 }
 
-function stringOfCtl(ctl: CtlEntry): string {
-  return `${ctl.pc}`;
+function renderCtlEntry(ctl: CtlEntry): JSX.Element {
+  let name: (JSX.Element | string)[] = [''];
+  if (ctl.readingName) {
+    name = [`, name: `, <span style={{ color: 'red' }}>?</span>];
+  }
+  else if (ctl.name != undefined) {
+    name = [`, name: ${ctl.name}`];
+  }
+  return <span><div className="ctlbutton">
+    {ctl.pc}
+  </div>[def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
 }
 
 function renderCtl(ctl: Ctl): JSX.Element {
-  const str = ctl.map(ctlent => {
-    return <div className="ctlbutton">
-      {stringOfCtl(ctlent)}
-    </div>;
-  });
+  const str = ctl.map(renderCtlEntry);
+
   return <div className="ctlcontainer">{str}</div>;
 }
 
@@ -204,9 +210,11 @@ export function renderState(state: State, dispatch: Dispatch, currentRange: Rng 
      * /} ${stringOfMeta(state.meta)}
      * `; */
   }
-  return hsplit(
-    renderToks(state, dispatch, currentRange),
-    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
-    0.20
-  );
+  return <div>
+    <b>Control</b>: {renderCtlEntry(state.cframe)}<br />
+    {hsplit(
+      renderToks(state, dispatch, currentRange),
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
+      0.20
+    )}</div>;
 }
