@@ -1,12 +1,14 @@
 import { produce } from 'immer';
-import { Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
+import { CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
 import { Rng } from "./range";
 
 export function mkState(toks: Tok[][]): State {
   return {
-    pc: 0,
-    program: { first: 0, last: 0 },
-
+    cframe: {
+      pc: 0,
+      program: { first: 0, last: 0 },
+      defining: true,
+    },
     ctl: [],
     ctx: [],
     meta: [],
@@ -24,6 +26,16 @@ function popStack(state: State): undefined | { elt: StackEntry, newState: State 
   const elt = state.stack.at(-1)!;
   const newState = produce(state, s => {
     s.stack.pop();
+  });
+  return { elt, newState };
+}
+
+function popCtl(state: State): undefined | { elt: CtlEntry, newState: State } {
+  if (state.ctl.length == 0)
+    return undefined;
+  const elt = state.ctl.at(-1)!;
+  const newState = produce(state, s => {
+    s.ctl.pop();
   });
   return { elt, newState };
 }
@@ -80,38 +92,63 @@ function callIdent(state: State, name: string): State {
     return errorState(state, `couldn't find ${name}`);
   }
   return produce(state, s => {
-    s.ctl.push({
-      pc: state.pc,
-      program: state.program
-    });
-    s.pc = sigent.program.first - 1; // because we'll increment it later
+    s.ctl.push(state.cframe);
+    s.cframe.pc = sigent.program.first - 1; // because we'll increment it later
+    s.cframe.defining = false;
   });
 }
 
 function execInstruction(state: State, inst: Tok, pc: number): State {
   switch (inst.t) {
     case 'type': return produce(state, s => {
-      s.program.last = pc;
+      s.cframe.program.last = pc;
       s.stack.push({ term: { t: 'type' }, klass: { t: 'kind' } });
     });
 
     case '.': {
-      const popResult = popStack(state);
-      if (popResult == undefined)
-        return produce(state, s => { s.error = `stack underflow during .`; });
-      const { elt, newState } = popResult;
-      if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
-        return produce(state, s => { s.error = `expected classifier on stack during .`; });
-      }
-      const emptyProgram: Tok[] = [];
-      return produce(newState, s => {
-        s.sig.push({
-          name: inst.name ?? '_',
-          klass: elt.term,
-          program: state.program,
+      if (state.cframe.defining) {
+        const popResult = popStack(state);
+        if (popResult == undefined)
+          return produce(state, s => { s.error = `stack underflow during .`; });
+        const { elt, newState } = popResult;
+        if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
+          return produce(state, s => { s.error = `expected classifier on stack during .`; });
+        }
+        const emptyProgram: Tok[] = [];
+        return produce(newState, s => {
+          s.sig.push({
+            name: inst.name ?? '_',
+            klass: elt.term,
+            program: state.cframe.program,
+          });
+          s.cframe.program = { first: pc + 1, last: pc };
         });
-        s.program = { first: pc + 1, last: pc };
-      });
+      }
+      else {
+        let ms = state;
+
+        const popCtlResult = popCtl(ms);
+        if (popCtlResult == undefined)
+          return errorState(ms, `ctl underflow during :`);
+        const { elt: cframe, newState: state0 } = popCtlResult;
+        ms = state;
+
+        const popStackResult = popStack(ms);
+        if (popStackResult == undefined)
+          return errorState(state, `ctl underflow during :`);
+        const { elt: sframe, newState: state1 } = popStackResult;
+        ms = state1;
+
+        const name = inst.name;
+        if (name == undefined) {
+          return errorState(state, `expected constant to be named during :`);
+        }
+
+        return produce(ms, s => {
+          s.cframe = cframe;
+          s.stack.push({ term: { t: 'appc', cid: name, spine: [] }, klass: sframe.term })
+        });
+      }
     }
 
     case 'id': {
@@ -121,7 +158,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 
         case 'l':
           return produce(state, s => {
-            s.program.last = pc;
+            s.cframe.program.last = pc;
             s.stack.push({
               term: { t: 'appc', cid: 'l', spine: [] },
               klass: { t: 'appc', cid: 'o', spine: [] },
@@ -130,7 +167,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 
         case 'k':
           return produce(state, s => {
-            s.program.last = pc;
+            s.cframe.program.last = pc;
             s.stack.push({
               term: { t: 'appc', cid: 'k', spine: [] },
               klass: { t: 'appc', cid: 'o', spine: [] },
@@ -146,7 +183,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
             return produce(state, s => { s.error = `type mismatch during s`; });
           }
           return produce(newState, s => {
-            s.program.last = pc;
+            s.cframe.program.last = pc;
             s.stack.push({
               term: { t: 'appc', cid: 's', spine: [elt.term] },
               klass: { t: 'appc', cid: 'o', spine: [] }
@@ -172,7 +209,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
           }
 
           return produce(newState2, s => {
-            s.program.last = pc;
+            s.cframe.program.last = pc;
             s.stack.push({
               term: { t: 'appc', cid: 'b', spine: [elt1.term, elt2.term] },
               klass: { t: 'type' }
@@ -182,7 +219,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 
         case 'x':
           return produce(state, s => {
-            s.program.last = pc;
+            s.cframe.program.last = pc;
             s.stack.push({
               term: { t: 'appv', head: 'x', spine: [] },
               klass: { t: 'appc', cid: 'o', spine: [] },
@@ -245,7 +282,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
 
       return produce(state2, s => {
-        s.program.last = pc;
+        s.cframe.program.last = pc;
         s.stack.push(newStackEntry);
       });
     }
@@ -258,9 +295,9 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 export function stepForward(state: State): State | undefined {
   if (state.error)
     return undefined;
-  state = execInstruction(state, state.toks[state.pc], state.pc);
-  state = produce(state, s => { s.pc++; });
-  if (state.pc >= state.toks.length) return undefined;
+  state = execInstruction(state, state.toks[state.cframe.pc], state.cframe.pc);
+  state = produce(state, s => { s.cframe.pc++; });
+  if (state.cframe.pc >= state.toks.length) return undefined;
   return state;
 }
 

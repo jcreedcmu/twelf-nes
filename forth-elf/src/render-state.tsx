@@ -67,7 +67,7 @@ function renderToks(state: State, dispatch: Dispatch, currentRange: Rng | undefi
         console.log(i);
         className.push('hilited');
       }
-      if (i == state.pc) className.push('active');
+      if (i == state.cframe.pc) className.push('active');
       const str = stringOfTok(tok);
       const elt = <div className={className.join(' ')} onMouseDown={findPc(i)}>{str}</div>;
       row.push(elt);

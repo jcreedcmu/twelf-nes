@@ -30,7 +30,7 @@ function reduce_inner(state: AppState, action: Action): AppState {
       });
     }
     case 'findPc': {
-      const newFrame = state.states.findIndex(state => state.pc == action.pc);
+      const newFrame = state.states.findIndex(state => state.cframe.pc == action.pc);
       if (newFrame != -1) {
         return produce(state, s => {
           s.frame = newFrame;
