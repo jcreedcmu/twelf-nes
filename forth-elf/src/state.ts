@@ -106,11 +106,17 @@ function callSigIdent(state: State, name: string): State {
     return errorState(state, `couldn't find ${name}`);
   }
   const cframe: StackEntry = { t: 'control', cframe: state.cframe };
+  const newCframe: CtlEntry = {
+    code: [],
+    defining: false,
+    name: undefined,
+    pc: pcPrev({ t: 'sigEntry', sigIx: sigent, tokIx: 0 }),
+    program: state.cframe.program, // XXX this duplication is suspicious
+    readingName: false,
+  }
   return produce(state, s => {
     s.stack.push(cframe);
-    s.cframe.code = [];
-    s.cframe.pc = pcPrev({ t: 'sigEntry', sigIx: sigent, tokIx: 0 }); // -1 because we'll increment it later
-    s.cframe.defining = false;
+    s.cframe = newCframe;
   });
 }
 
