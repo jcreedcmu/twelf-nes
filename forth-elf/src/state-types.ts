@@ -41,6 +41,7 @@ export type SigEntry = {
   name: string,
   klass: Expr,
   range: Rng,
+  program: Tok[],
 };
 
 export type CtxEntry = {
@@ -73,7 +74,10 @@ export type Stack = StackEntry[];
 export type Toks = Tok[];
 
 export type State = {
+  // Control Frame?
   pc: number,
+  program: Tok[],
+
   sig: Sig,
   ctx: Ctx,
   meta: MetaCtx,

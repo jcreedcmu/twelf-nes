@@ -4,6 +4,8 @@ import { Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-t
 export function mkState(toks: Tok[][]): State {
   return {
     pc: 0,
+    program: [],
+
     ctl: [],
     ctx: [],
     meta: [],
@@ -70,6 +72,7 @@ function exprEqual(e1: Expr, e2: Expr) {
 function execInstruction(state: State, inst: Tok): State {
   switch (inst.t) {
     case 'type': return produce(state, s => {
+      s.program.push({ t: 'type' });
       s.stack.push({ term: { t: 'type' }, klass: { t: 'kind' } });
     });
 
@@ -81,12 +84,15 @@ function execInstruction(state: State, inst: Tok): State {
       if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
         return produce(state, s => { s.error = `expected classifier on stack during .`; });
       }
+      const emptyProgram: Tok[] = [];
       return produce(newState, s => {
         s.sig.push({
           name: inst.name ?? '_',
           range: { first: 0, last: 1 },
           klass: elt.term,
+          program: state.program,
         });
+        s.program = emptyProgram;
       });
     }
 
@@ -94,6 +100,7 @@ function execInstruction(state: State, inst: Tok): State {
       switch (inst.name) {
         case 'o':
           return produce(state, s => {
+            s.program.push({ t: 'id', name: 'o' });
             s.stack.push({
               term: { t: 'appc', cid: 'o', spine: [] },
               klass: { t: 'type' }
@@ -102,6 +109,7 @@ function execInstruction(state: State, inst: Tok): State {
 
         case 'l':
           return produce(state, s => {
+            s.program.push({ t: 'id', name: 'l' });
             s.stack.push({
               term: { t: 'appc', cid: 'l', spine: [] },
               klass: { t: 'appc', cid: 'o', spine: [] },
@@ -110,6 +118,7 @@ function execInstruction(state: State, inst: Tok): State {
 
         case 'k':
           return produce(state, s => {
+            s.program.push({ t: 'id', name: 'k' });
             s.stack.push({
               term: { t: 'appc', cid: 'k', spine: [] },
               klass: { t: 'appc', cid: 'o', spine: [] },
@@ -125,6 +134,7 @@ function execInstruction(state: State, inst: Tok): State {
             return produce(state, s => { s.error = `type mismatch during s`; });
           }
           return produce(newState, s => {
+            s.program.push({ t: 'id', name: 's' });
             s.stack.push({
               term: { t: 'appc', cid: 's', spine: [elt.term] },
               klass: { t: 'appc', cid: 'o', spine: [] }
@@ -150,6 +160,7 @@ function execInstruction(state: State, inst: Tok): State {
           }
 
           return produce(newState2, s => {
+            s.program.push({ t: 'id', name: 'b' });
             s.stack.push({
               term: { t: 'appc', cid: 'b', spine: [elt1.term, elt2.term] },
               klass: { t: 'type' }
@@ -159,6 +170,7 @@ function execInstruction(state: State, inst: Tok): State {
 
         case 'x':
           return produce(state, s => {
+            s.program.push({ t: 'id', name: 'x' });
             s.stack.push({
               term: { t: 'appv', head: 'x', spine: [] },
               klass: { t: 'appc', cid: 'o', spine: [] },
