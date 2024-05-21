@@ -70,13 +70,21 @@ function exprEqual(e1: Expr, e2: Expr) {
 }
 
 
+function errorState(state: State, msg: string): State {
+  return produce(state, s => { s.error = msg; });
+}
+
 function callIdent(state: State, name: string): State {
+  const sigent = state.sig.find(se => se.name == name);
+  if (sigent == undefined) {
+    return errorState(state, `couldn't find ${name}`);
+  }
   return produce(state, s => {
-    s.program.last = state.pc;
-    s.stack.push({
-      term: { t: 'appc', cid: 'o', spine: [] },
-      klass: { t: 'type' }
+    s.ctl.push({
+      pc: state.pc,
+      program: state.program
     });
+    s.pc = sigent.program.first - 1; // because we'll increment it later
   });
 }
 
