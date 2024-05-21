@@ -40,8 +40,8 @@ export type PosTok = { tok: Tok, range: Range };
 export type SigEntry = {
   name: string,
   klass: Expr,
-  range: Rng,
-  program: Tok[],
+  range: Rng, // deprecated
+  program: Rng,
 };
 
 export type CtxEntry = {
@@ -76,7 +76,7 @@ export type Toks = Tok[];
 export type State = {
   // Control Frame?
   pc: number,
-  program: Tok[],
+  program: Rng,
 
   sig: Sig,
   ctx: Ctx,
