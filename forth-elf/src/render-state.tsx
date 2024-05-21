@@ -74,6 +74,8 @@ function renderToks(state: State, dispatch: Dispatch, currentSelection: Selectio
       if (currentSelection != undefined && isTokenHilighted(state, currentSelection, i)) {
         className.push('hilited');
       }
+      if (state.ctl.find(cf => cf.pc == i)) className.push('latent');
+
       if (i == state.cframe.pc) className.push('active');
       const str = stringOfTok(tok);
       const elt = <div className={className.join(' ')} onMouseDown={findPc(i)}>{str}</div>;
