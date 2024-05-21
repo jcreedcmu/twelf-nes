@@ -246,20 +246,19 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
           <b>Meta</b>:{renderMeta(state.meta)}<br />
         </div>,
       ];
+  }
 
-    /* ${stringOfSig(state.sig)}
-     *       {white - fg} stack: {
-     * /} ${stringOfStack(state.stack)}
-     * { white - fg} meta: {
-     * /} ${stringOfMeta(state.meta)}
-     * `; */
+  function renderAllCode(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
+    const pieces: JSX.Element[] = [];
+    pieces.push(renderToks(state, dispatch, currentSelection));
+    return <div style={{ display: 'flex', flexDirection: 'column' }}>{pieces}</div>;
   }
 
   const dupCurrentSelection = showDupCurrentSelection(state, currentSelection);
   return <div>
     <b>Control</b>: {renderCtlEntry(state.cframe, currentSelection, dispatch)}<br />
     {hsplit(
-      renderToks(state, dispatch, currentSelection),
+      renderAllCode(state, dispatch, currentSelection),
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
       0.20
     )}<br />
