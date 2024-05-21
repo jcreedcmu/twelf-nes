@@ -13,7 +13,6 @@ export function mkState(toks: Tok[][]): State {
       pc: { t: 'tokstream', index: 0 },
       program: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 0 } },
       code: [],
-      defining: true,
       readingName: false,
       name: undefined,
     },
@@ -108,7 +107,6 @@ function callSigIdent(state: State, name: string): State {
   const cframe: StackEntry = { t: 'control', cframe: state.cframe };
   const newCframe: CtlEntry = {
     code: [],
-    defining: false,
     name: undefined,
     pc: pcPrev({ t: 'sigEntry', sigIx: sigent, tokIx: 0 }),
     program: state.cframe.program, // XXX this duplication is suspicious
@@ -261,23 +259,23 @@ function doGrab(state: State, pc: Pc): State {
 }
 
 function execInstruction(state: State, inst: Tok, pc: Pc): State {
-  if (state.cframe.defining) {
-    if (inst.t == '.') {
-      state = produce(state, s => {
-        s.cframe.code.push({ t: 'ret' });
-      });
-    }
-    else if (inst.t == '->') {
-      state = produce(state, s => {
-        s.cframe.code.push({ t: 'grab' });
-      });
-    }
-    else {
-      state = produce(state, s => {
-        s.cframe.code.push(inst);
-      });
-    }
+
+  if (inst.t == '.') {
+    state = produce(state, s => {
+      s.cframe.code.push({ t: 'ret' });
+    });
   }
+  else if (inst.t == '->') {
+    state = produce(state, s => {
+      s.cframe.code.push({ t: 'grab' });
+    });
+  }
+  else {
+    state = produce(state, s => {
+      s.cframe.code.push(inst);
+    });
+  }
+
 
   if (state.cframe.readingName) {
     return produce(state, s => {
@@ -293,11 +291,6 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
     });
 
     case '.': {
-      // XXX eventually deprecate
-      if (!state.cframe.defining) {
-        return doReturn(state, pc);
-      }
-
       state = doCloseParen(state, pc);
       if (state.error)
         return state;
@@ -357,11 +350,6 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
     }
 
     case '->': {
-      // XXX eventually deprecate
-      if (!state.cframe.defining) {
-        return doGrab(state, pc);
-      }
-
       const popResult = popStack(state);
       if (popResult == undefined)
         return produce(state, s => { s.error = `stack underflow during ->`; });

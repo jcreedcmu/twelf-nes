@@ -201,7 +201,7 @@ function renderCtlEntry(state: State, ctl: CtlEntry, currentSelection: Selection
   }
   return <span><div className={className.join(' ')} onMouseDown={onMouseDown}>
     {renderPc(state, ctl.pc)}
-  </div>[def: {ctl.defining ? 'T' : 'F'}, {code}{name}]</span>;
+  </div>[{code}{name}]</span>;
 }
 
 type Lerp = JSX.Element | JSX.Element[];
