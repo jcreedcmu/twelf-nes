@@ -2,7 +2,7 @@ import { produce } from 'immer';
 import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks, Pc, DataStackEntry } from './state-types';
 import { Rng } from "./range";
 import { tokenToString } from 'typescript';
-import { stringOfTok } from './render-state';
+import { rawTok, stringOfTok } from './render-state';
 import { pcNext, pcPrev } from './program-counter';
 
 const ITERATIONS_LIMIT = 1000;
@@ -279,7 +279,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
   if (state.cframe.readingName) {
     return produce(state, s => {
-      s.cframe.name = stringOfTok(inst);
+      s.cframe.name = rawTok(inst);
       s.cframe.readingName = false;
     });
   }
@@ -326,10 +326,12 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
     case 'id': {
       switch (inst.name) {
         case 'o': // fallthrough intentional
-        case 'l': // fallthrough intentional
+        case 'ell': // fallthrough intentional
         case 's': // fallthrough intentional
         case 'b': // fallthrough intentional
         case 'k':
+        case 'bt':
+        case 'e':
           return callSigIdent(state, inst.name);
 
         case 'x': // fallthrough intentional

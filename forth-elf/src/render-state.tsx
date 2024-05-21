@@ -11,13 +11,34 @@ export function stringOfTok(tok: Tok): string {
     case 'grab': return '▷';
     case 'ret': return '⤶';
     case '.': return '.';
-    case 'id': return tok.name;
+    case 'id': {
+      if (tok.name == 'ell')
+        return 'ℓ';
+      else
+        return tok.name;
+    }
     case ':': return ':';
     case '(': return '(';
     case ')': return ')';
     case '[': return '[';
     case ']': return ']';
   }
+}
+
+export function rawTok(tok: Tok): string {
+  switch (tok.t) {
+    case 'id':
+      return tok.name;
+    default:
+      return tok.t;
+  }
+}
+
+export function texOfName(name: string): string {
+  if (name == 'ell')
+    return '\\ell';
+  else
+    return name;
 }
 
 function appToSpine(head: string, spine: Expr[]): string {
@@ -51,8 +72,8 @@ function exprToTex(e: Expr): string {
     case 'kind': return '\\mathsf{kind}';
     case 'pi': return e.name == undefined ? `(${exprToTex(e.a)} \\to ${exprToTex(e.b)})`
       : `\\left( \\prod_{ ${e.name} {:} ${exprToTex(e.a)}}  ${exprToTex(e.b)} \\right)`;
-    case 'appc': return appToSpineTex(e.cid, e.spine);
-    case 'appv': return appToSpineTex(e.head, e.spine);
+    case 'appc': return appToSpineTex(texOfName(e.cid), e.spine);
+    case 'appv': return appToSpineTex(texOfName(e.head), e.spine);
   }
 }
 
@@ -110,7 +131,7 @@ function renderToks(offset: number, state: State, dispatch: Dispatch, currentSel
 }
 
 function declToTex(decl: { name: string, klass: Expr }): string {
-  return `${decl.name} : ${exprToTex(decl.klass)}`;
+  return `${texOfName(decl.name)} : ${exprToTex(decl.klass)}`;
 }
 
 function subToTex(decl: { term: Expr, klass: Expr }): string {
