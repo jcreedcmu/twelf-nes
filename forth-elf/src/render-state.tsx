@@ -141,7 +141,7 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   return <pre>{str}</pre>;
 }
 
-function renderCtlEntry(ctl: CtlEntry, dispatch: Dispatch, action?: Action): JSX.Element {
+function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
   let name: (JSX.Element | string)[] = [''];
   if (ctl.readingName) {
     name = [`, name: `, <span style={{ color: 'red' }}>?</span>];
@@ -149,16 +149,20 @@ function renderCtlEntry(ctl: CtlEntry, dispatch: Dispatch, action?: Action): JSX
   else if (ctl.name != undefined) {
     name = [`, name: ${ctl.name}`];
   }
-  const onMouseDown = action == undefined ? undefined : (e: React.MouseEvent) => {
-    dispatch(action);
+  const onMouseDown = index == undefined ? undefined : (e: React.MouseEvent) => {
+    dispatch({ t: 'setCurrentSel', sel: { t: 'ctlItem', index } });
   };
-  return <span><div className="ctlbutton" onMouseDown={onMouseDown}>
+  const className: string[] = ["ctlbutton"];
+  if (currentSelection != undefined && currentSelection.t == 'ctlItem' && index != undefined && currentSelection.index == index) {
+    className.push('hilited');
+  }
+  return <span><div className={className.join(' ')} onMouseDown={onMouseDown}>
     {ctl.pc}
   </div>[def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
 }
 
-function renderCtl(ctl: Ctl, dispatch: Dispatch): JSX.Element {
-  const str = ctl.map((ce, index) => renderCtlEntry(ce, dispatch, { t: 'setCurrentSel', sel: { t: 'ctlItem', index } }));
+function renderCtl(ctl: Ctl, currentSelection: Selection | undefined, dispatch: Dispatch): JSX.Element {
+  const str = ctl.map((ce, index) => renderCtlEntry(ce, currentSelection, dispatch, index));
 
   return <div className="ctlcontainer">{str}</div>;
 }
@@ -203,6 +207,9 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
     stateRepn =
       [
         <div style={tdStyle}>
+          <b>Ctl</b>:{renderCtl(state.ctl, currentSelection, dispatch)}<br />
+        </div>,
+        <div style={tdStyle}>
           <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
         </div>,
         <div style={tdStyle}>
@@ -210,9 +217,6 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
         </div>,
         <div style={tdStyle}>
           <b>Meta</b>:{renderMeta(state.meta)}<br />
-        </div>,
-        <div style={tdStyle}>
-          <b>Ctl</b>:{renderCtl(state.ctl, dispatch)}<br />
         </div>,
       ];
 
@@ -224,7 +228,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
      * `; */
   }
   return <div>
-    <b>Control</b>: {renderCtlEntry(state.cframe, dispatch)}<br />
+    <b>Control</b>: {renderCtlEntry(state.cframe, currentSelection, dispatch)}<br />
     {hsplit(
       renderToks(state, dispatch, currentSelection),
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
