@@ -44,3 +44,20 @@ table.state tr td:last-child,
 table.state tr th:last-child {
   border-right: 0;
 }
+
+.sigbutton {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin: 4px;
+  padding: 4px 8px;
+  font-family: monospace;
+  display: inline-block;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sigcontainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}

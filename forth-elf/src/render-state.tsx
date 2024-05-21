@@ -83,13 +83,13 @@ function subToTex(decl: { term: Expr, klass: Expr }): string {
   return `${exprToTex(decl.term)} : ${exprToTex(decl.klass)}`;
 }
 
-function renderSig(sig: Sig): JSX.Element {
+function renderSig(sig: Sig, dispatch: Dispatch): JSX.Element {
   const newline = "\n";
 
   const str = sig.map(e => {
-    return <span><Tex expr={declToTex(e) + '.'} />{newline}</span>;
+    return <div className="sigbutton"><Tex expr={declToTex(e) + '.'} />{newline}</div>;
   });
-  return <pre>{str}</pre>;
+  return <div className="sigcontainer">{str}</div>;
 }
 
 function renderStack(stack: Stack): JSX.Element {
@@ -142,7 +142,7 @@ export function renderState(state: State, dispatch: Dispatch): JSX.Element {
     stateRepn =
       [
         <td style={tdStyle}>
-          <b>Sig</b>:{renderSig(state.sig)}
+          <b>Sig</b>:{renderSig(state.sig, dispatch)}
         </td>,
         <td style={tdStyle}>
           <b>Stack</b>:{renderStack(state.stack)}
