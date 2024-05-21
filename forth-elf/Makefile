@@ -1,3 +1,5 @@
+SHELL=/usr/bin/bash
+
 build:
 	node ./build.js
 
