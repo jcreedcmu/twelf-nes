@@ -2,6 +2,8 @@ import { produce } from 'immer';
 import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
 import { Rng } from "./range";
 
+const ITERATIONS_LIMIT = 1000;
+
 export function mkState(toks: Tok[][]): State {
   return {
     cframe: {
@@ -52,7 +54,7 @@ function popMeta(state: State): undefined | { elt: MetaCtxEntry, newState: State
 
 function formPi(ctx: Ctx, base: StackEntry): StackEntry {
   let term = base.term;
-  for (let i = 0; i < ctx.length; i++) {
+  for (let i = ctx.length - 1; i >= 0; i--) {
     term = { t: 'pi', name: ctx[i].name, a: ctx[i].klass, b: term };
   }
   return { term, klass: base.klass };
@@ -230,11 +232,12 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         case 'k':
           return callIdent(state, inst.name);
 
-        case 'x':
+        case 'x': // fallthrough intentional
+        case 'y':
           return produce(state, s => {
             s.cframe.program.last = pc;
             s.stack.push({
-              term: { t: 'appv', head: 'x', spine: [] },
+              term: { t: 'appv', head: inst.name, spine: [] },
               klass: { t: 'appc', cid: 'o', spine: [] },
             });
           });
@@ -314,7 +317,7 @@ export function stepForward(state: State): State | undefined {
 
 export function run(state: State): State[] {
   const states: State[] = [];
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < ITERATIONS_LIMIT; i++) {
     states.push(state);
     const next = stepForward(state);
     if (next == undefined)
