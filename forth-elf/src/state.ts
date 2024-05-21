@@ -292,7 +292,9 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         const { elt: elt2, newState: ns2 } = popResult2;
         state = ns2;
 
-        // XXX check equality of elt1.term with elt2.klass
+        if (!exprEqual(elt1.term, elt2.klass)) {
+          return errorState(state, `type mismatch`);
+        }
 
         if (state.meta.length == 0)
           return errorState(state, `metacontext underflow during ->`);
