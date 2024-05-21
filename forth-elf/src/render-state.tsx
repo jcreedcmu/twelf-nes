@@ -1,5 +1,5 @@
 import { tokenToString } from "typescript";
-import { Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, Stack, State, SubEntry, Tok } from "./state-types";
+import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, Stack, State, SubEntry, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 import Tex from './katex';
 import { CSSProperties } from "react";
@@ -140,7 +140,7 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   return <pre>{str}</pre>;
 }
 
-function renderCtlEntry(ctl: CtlEntry): JSX.Element {
+function renderCtlEntry(ctl: CtlEntry, dispatch: Dispatch, action?: Action): JSX.Element {
   let name: (JSX.Element | string)[] = [''];
   if (ctl.readingName) {
     name = [`, name: `, <span style={{ color: 'red' }}>?</span>];
@@ -148,13 +148,16 @@ function renderCtlEntry(ctl: CtlEntry): JSX.Element {
   else if (ctl.name != undefined) {
     name = [`, name: ${ctl.name}`];
   }
-  return <span><div className="ctlbutton">
+  const onMouseDown = action == undefined ? undefined : (e: React.MouseEvent) => {
+    dispatch(action);
+  };
+  return <span><div className="ctlbutton" onMouseDown={onMouseDown}>
     {ctl.pc}
   </div>[def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
 }
 
-function renderCtl(ctl: Ctl): JSX.Element {
-  const str = ctl.map(renderCtlEntry);
+function renderCtl(ctl: Ctl, dispatch: Dispatch): JSX.Element {
+  const str = ctl.map((ce, i) => renderCtlEntry(ce, dispatch));
 
   return <div className="ctlcontainer">{str}</div>;
 }
@@ -208,7 +211,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
           <b>Meta</b>:{renderMeta(state.meta)}<br />
         </div>,
         <div style={tdStyle}>
-          <b>Ctl</b>:{renderCtl(state.ctl)}<br />
+          <b>Ctl</b>:{renderCtl(state.ctl, dispatch)}<br />
         </div>,
       ];
 
@@ -220,7 +223,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
      * `; */
   }
   return <div>
-    <b>Control</b>: {renderCtlEntry(state.cframe)}<br />
+    <b>Control</b>: {renderCtlEntry(state.cframe, dispatch)}<br />
     {hsplit(
       renderToks(state, dispatch, currentSelection),
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
