@@ -139,6 +139,7 @@ function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
   const s: CSSProperties = {
     display: 'flex',
     flexDirection: 'row',
+    alignItems: 'stretch',
   }
   const s1: CSSProperties = {
     flexShrink: 0,
@@ -157,8 +158,11 @@ function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
 export function renderState(state: State, dispatch: Dispatch, currentRange: Rng | undefined): JSX.Element {
   let stateRepn: JSX.Element[];
   const tdStyle: CSSProperties = {
-    verticalAlign: 'top',
-    width: '15%',
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: 0,
+    overflowX: 'hidden',
+    borderRight: '1px solid black',
   };
 
 
@@ -168,15 +172,15 @@ export function renderState(state: State, dispatch: Dispatch, currentRange: Rng 
   else {
     stateRepn =
       [
-        <td style={tdStyle}>
+        <div style={tdStyle}>
           <b>Sig</b>:{renderSig(state.sig, dispatch)}
-        </td>,
-        <td style={tdStyle}>
+        </div>,
+        <div style={tdStyle}>
           <b>Stack</b>:{renderStack(state.stack)}
-        </td>,
-        <td style={tdStyle}>
+        </div>,
+        <div style={tdStyle}>
           <b>Meta</b>:{renderMeta(state.meta)}<br />
-        </td>,
+        </div>,
       ];
 
     /* ${stringOfSig(state.sig)}
@@ -188,7 +192,7 @@ export function renderState(state: State, dispatch: Dispatch, currentRange: Rng 
   }
   return hsplit(
     renderToks(state, dispatch, currentRange),
-    <table className="state"><tr>{stateRepn}</tr></table>,
+    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
     0.20
   );
 }
