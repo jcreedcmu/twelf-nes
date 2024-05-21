@@ -1,5 +1,5 @@
 import { tokenToString } from "typescript";
-import { Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, SubEntry, Tok } from "./state-types";
+import { Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, Stack, State, SubEntry, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 import Tex from './katex';
 import { CSSProperties } from "react";
@@ -55,7 +55,13 @@ function exprToTex(e: Expr): string {
   }
 }
 
-function renderToks(state: State, dispatch: Dispatch, currentRange: Rng | undefined): JSX.Element {
+function isTokenHilighted(state: State, sel: Selection, index: number): boolean {
+  switch (sel.t) {
+    case 'range': return in_range(index, sel.range);
+  }
+}
+
+function renderToks(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
   let i = 0;
   function findPc(pc: number): (e: React.MouseEvent) => void {
     return e => dispatch({ t: 'findPc', pc });
@@ -64,8 +70,7 @@ function renderToks(state: State, dispatch: Dispatch, currentRange: Rng | undefi
   for (const decl of state.origToks) {
     for (const tok of decl) {
       const className = ['token'];
-      if (currentRange != undefined && in_range(i, currentRange)) {
-        console.log(i);
+      if (currentSelection != undefined && isTokenHilighted(state, currentSelection, i)) {
         className.push('hilited');
       }
       if (i == state.cframe.pc) className.push('active');
@@ -172,7 +177,7 @@ function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
   return <div style={s}><div style={s1} >{x}</div><div style={s2} >{y}</div></div>;
 }
 
-export function renderState(state: State, dispatch: Dispatch, currentRange: Rng | undefined): JSX.Element {
+export function renderState(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
   let stateRepn: JSX.Element[];
   const tdStyle: CSSProperties = {
     flexGrow: 1,
@@ -213,7 +218,7 @@ export function renderState(state: State, dispatch: Dispatch, currentRange: Rng 
   return <div>
     <b>Control</b>: {renderCtlEntry(state.cframe)}<br />
     {hsplit(
-      renderToks(state, dispatch, currentRange),
+      renderToks(state, dispatch, currentSelection),
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
       0.20
     )}</div>;

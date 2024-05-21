@@ -52,7 +52,7 @@ function reduce_inner(state: AppState, action: Action): AppState {
         if (frame != undefined) {
           return produce(state, s => {
             s.frame = frame;
-            s.currentRange = undefined;
+            s.currentSelection = undefined;
           });
         }
         else {
@@ -63,7 +63,7 @@ function reduce_inner(state: AppState, action: Action): AppState {
         const newFrame = Math.max(Math.min(state.frame + action.dframe, state.states.length - 1), 0);
         return produce(state, s => {
           s.frame = newFrame;
-          s.currentRange = undefined;
+          s.currentSelection = undefined;
         });
       }
     }
@@ -72,7 +72,7 @@ function reduce_inner(state: AppState, action: Action): AppState {
       if (newFrame != -1) {
         return produce(state, s => {
           s.frame = newFrame;
-          s.currentRange = undefined;
+          s.currentSelection = undefined;
         });
       }
       else {
@@ -81,7 +81,7 @@ function reduce_inner(state: AppState, action: Action): AppState {
     }
     case 'setCurrentRange': {
       return produce(state, s => {
-        s.currentRange = action.range;
+        s.currentSelection = { t: 'range', range: action.range };
       });
     }
   }
@@ -92,13 +92,13 @@ export function mkAppState(input: string): AppState {
   return {
     frame: 0,
     states,
-    currentRange: undefined,
+    currentSelection: undefined,
   }
 }
 
 export function renderAppState(app: AppState, dispatch: Dispatch): JSX.Element {
   return <div><b>time</b>: {app.frame}<br /><br />
-    {renderState(app.states[app.frame], dispatch, app.currentRange)}</div>;
+    {renderState(app.states[app.frame], dispatch, app.currentSelection)}</div>;
 }
 
 function App(props: AppProps): JSX.Element {

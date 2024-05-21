@@ -6,9 +6,13 @@ export type Action =
   | { t: 'setCurrentRange', range: Rng }
   ;
 
+export type Selection =
+  | { t: 'range', range: Rng }
+  ;
+
 export type AppState = {
   frame: number,
-  currentRange: Rng | undefined,
+  currentSelection: Selection | undefined,
   states: State[],
 }
 
