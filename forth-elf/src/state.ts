@@ -156,11 +156,61 @@ function doCloseParen(state: State, pc: Pc): State {
   });
 }
 
+function doReturn(state: State, pc: Pc): State {
+  let ms = state;
+
+  const popStackResult = popStack(ms);
+  if (popStackResult == undefined)
+    return errorState(state, `data underflow during :`);
+  const { elt: sframe, newState: state1 } = popStackResult;
+  ms = state1;
+
+  if (sframe.t != 'data') {
+    return errorState(state, `expected data frame on stack`);
+  }
+
+  const popCtlResult = popStack(ms);
+  if (popCtlResult == undefined)
+    return errorState(ms, `ctl underflow during :`);
+  const { elt: celt, newState: state0 } = popCtlResult;
+  if (celt.t != 'control') {
+    return errorState(state, `expected control frame on stack`);
+  }
+  ms = state0;
+
+  const popMetaResult = popMeta(ms);
+  if (popMetaResult == undefined)
+    return errorState(state, `ctl underflow during :`);
+  const { elt: mframe, newState: state2 } = popMetaResult;
+  ms = state2;
+
+  const name = state.cframe.name;
+  if (name == undefined) {
+    return errorState(state, `expected constant to be named during :`);
+  }
+
+  if (mframe.t != 'sub') {
+    return errorState(state, `expected sub during .`);
+  }
+
+  return produce(ms, s => {
+    s.cframe = celt.cframe;
+    s.stack.push(formRoot(name, mframe.sub, sframe));
+  });
+}
+
 function execInstruction(state: State, inst: Tok, pc: Pc): State {
   if (state.cframe.defining) {
-    state = produce(state, s => {
-      s.cframe.code.push(inst);
-    });
+    if (inst.t == '.') {
+      state = produce(state, s => {
+        s.cframe.code.push({ t: 'ret' });
+      });
+    }
+    else {
+      state = produce(state, s => {
+        s.cframe.code.push(inst);
+      });
+    }
   }
 
   if (state.cframe.readingName) {
@@ -177,80 +227,41 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
     });
 
     case '.': {
-      if (state.cframe.defining) {
-        state = doCloseParen(state, pc);
-        if (state.error)
-          return state;
+      // XXX eventually deprecated condition?
+      if (!state.cframe.defining) {
+        return doReturn(state, pc);
+      }
 
-        const popResult = popStack(state);
-        if (popResult == undefined)
-          return produce(state, s => { s.error = `stack underflow during .`; });
-        const { elt, newState } = popResult;
-
-        if (elt.t != 'data') {
-          return errorState(state, `expected data frame on stack`);
-        }
-
-        if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
-          return produce(state, s => { s.error = `expected classifier on stack during .`; });
-        }
-        const emptyProgram: Tok[] = [];
-        state = produce(newState, s => {
-          s.sig.push({
-            name: state.cframe.name ?? '_',
-            klass: elt.term,
-            program: state.cframe.program,
-            code: state.cframe.code,
-          });
-          s.cframe.program = { first: pcNext(pc), last: pc };
-          s.cframe.code = [];
-          s.cframe.name = undefined;
-        });
-        state = doOpenParen(state);
+      state = doCloseParen(state, pc);
+      if (state.error)
         return state;
+
+      const popResult = popStack(state);
+      if (popResult == undefined)
+        return produce(state, s => { s.error = `stack underflow during .`; });
+      const { elt, newState } = popResult;
+
+      if (elt.t != 'data') {
+        return errorState(state, `expected data frame on stack`);
       }
-      else {
-        let ms = state;
 
-        const popStackResult = popStack(ms);
-        if (popStackResult == undefined)
-          return errorState(state, `data underflow during :`);
-        const { elt: sframe, newState: state1 } = popStackResult;
-        ms = state1;
-
-        if (sframe.t != 'data') {
-          return errorState(state, `expected data frame on stack`);
-        }
-
-        const popCtlResult = popStack(ms);
-        if (popCtlResult == undefined)
-          return errorState(ms, `ctl underflow during :`);
-        const { elt: celt, newState: state0 } = popCtlResult;
-        if (celt.t != 'control') {
-          return errorState(state, `expected control frame on stack`);
-        }
-        ms = state0;
-
-        const popMetaResult = popMeta(ms);
-        if (popMetaResult == undefined)
-          return errorState(state, `ctl underflow during :`);
-        const { elt: mframe, newState: state2 } = popMetaResult;
-        ms = state2;
-
-        const name = state.cframe.name;
-        if (name == undefined) {
-          return errorState(state, `expected constant to be named during :`);
-        }
-
-        if (mframe.t != 'sub') {
-          return errorState(state, `expected sub during .`);
-        }
-
-        return produce(ms, s => {
-          s.cframe = celt.cframe;
-          s.stack.push(formRoot(name, mframe.sub, sframe));
+      if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
+        return produce(state, s => { s.error = `expected classifier on stack during .`; });
+      }
+      const emptyProgram: Tok[] = [];
+      state = produce(newState, s => {
+        s.sig.push({
+          name: state.cframe.name ?? '_',
+          klass: elt.term,
+          program: state.cframe.program,
+          code: state.cframe.code,
         });
-      }
+        s.cframe.program = { first: pcNext(pc), last: pc };
+        s.cframe.code = [];
+        s.cframe.name = undefined;
+      });
+      state = doOpenParen(state);
+      return state;
     }
 
     case 'id': {
