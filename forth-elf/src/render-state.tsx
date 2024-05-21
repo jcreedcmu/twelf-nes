@@ -3,6 +3,7 @@ import { CtxEntry, Expr, MetaCtx, MetaCtxEntry, Sig, Stack, State, Tok } from ".
 import { Dispatch } from "./state-types";
 import Tex from './katex';
 import { CSSProperties } from "react";
+import { Rng, in_range } from "./range";
 
 function stringOfTok(tok: Tok): string {
   switch (tok.t) {
@@ -53,16 +54,19 @@ function exprToTex(e: Expr): string {
   }
 }
 
-function renderToks(state: State, dispatch: Dispatch): JSX.Element {
+function renderToks(state: State, dispatch: Dispatch, currentRange: Rng | undefined): JSX.Element {
   let i = 0;
   function setStep(i: number): (e: React.MouseEvent) => void {
     return e => dispatch({ t: 'setStep', frame: i });
   }
-
   const row: JSX.Element[] = [];
   for (const decl of state.origToks) {
     for (const tok of decl) {
       const className = ['token'];
+      if (currentRange != undefined && in_range(i, currentRange)) {
+        console.log(i);
+        className.push('hilited');
+      }
       if (i == state.pc) className.push('active');
       if (i < state.pc) className.push('executed');
       const str = stringOfTok(tok);
@@ -129,7 +133,7 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   return <pre>{str}</pre>;
 }
 
-export function renderState(state: State, dispatch: Dispatch): JSX.Element {
+export function renderState(state: State, dispatch: Dispatch, currentRange: Rng | undefined): JSX.Element {
   let stateRepn: JSX.Element[];
   const tdStyle: CSSProperties = {
     verticalAlign: 'top',
@@ -161,6 +165,6 @@ export function renderState(state: State, dispatch: Dispatch): JSX.Element {
      * /} ${stringOfMeta(state.meta)}
      * `; */
   }
-  return <table className="state"><tr><td style={tdStyle}>{renderToks(state, dispatch)}</td>
+  return <table className="state"><tr><td style={tdStyle}>{renderToks(state, dispatch, currentRange)}</td>
     {stateRepn} </tr></table>;
 }

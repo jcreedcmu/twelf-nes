@@ -1,5 +1,6 @@
 import { produce } from 'immer';
-import { Rng, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
+import { Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
+import { Rng } from "./range";
 
 export function mkState(toks: Tok[][]): State {
   return {
@@ -91,7 +92,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
           klass: elt.term,
           program: state.program,
         });
-        s.program = { first: pc + 1, last: pc + 1 };
+        s.program = { first: pc + 1, last: pc };
       });
     }
 
@@ -232,6 +233,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
 
       return produce(state2, s => {
+        s.program.last = pc;
         s.stack.push(newStackEntry);
       });
     }

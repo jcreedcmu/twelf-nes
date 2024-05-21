@@ -1,3 +1,5 @@
+import { Rng } from "./range";
+
 export type Action =
   | { t: 'changeStep', dframe: number }
   | { t: 'setStep', frame: number }
@@ -34,8 +36,6 @@ export type Tok =
   | { t: '.', name: string | undefined }
   | { t: 'id', name: string }
   ;
-
-export type Rng = { first: number, last: number };
 
 export type PosTok = { tok: Tok, range: Range };
 

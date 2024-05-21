@@ -22,6 +22,11 @@
   opacity: 40%;
 }
 
+.token.hilited {
+  background-color: #cfffff;
+  opacity: 100%;
+}
+
 table.state {
   border-collapse: collapse;
   width: 100%;

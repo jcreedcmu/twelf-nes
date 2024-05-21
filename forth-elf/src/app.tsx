@@ -26,19 +26,19 @@ function reduce_inner(state: AppState, action: Action): AppState {
       const newFrame = Math.max(Math.min(state.frame + action.dframe, state.states.length - 1), 0);
       return produce(state, s => {
         s.frame = newFrame;
-        state.currentRange = undefined;
+        s.currentRange = undefined;
       });
     }
     case 'setStep': {
       const newFrame = Math.max(Math.min(action.frame, state.states.length - 1), 0);
       return produce(state, s => {
         s.frame = newFrame;
-        state.currentRange = undefined;
+        s.currentRange = undefined;
       });
     }
     case 'setCurrentRange': {
       return produce(state, s => {
-        state.currentRange = action.range;
+        s.currentRange = action.range;
       });
     }
   }
@@ -54,8 +54,8 @@ export function mkAppState(input: string): AppState {
 }
 
 export function renderAppState(app: AppState, dispatch: Dispatch): JSX.Element {
-  return <div><b>time</b>: {app.frame}<br />
-    {renderState(app.states[app.frame], dispatch)}</div>;
+  return <div><b>time</b>: {app.frame}<br /><br />
+    {renderState(app.states[app.frame], dispatch, app.currentRange)}</div>;
 }
 
 function App(props: AppProps): JSX.Element {
