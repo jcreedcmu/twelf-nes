@@ -133,6 +133,27 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   return <pre>{str}</pre>;
 }
 
+type Lerp = JSX.Element | JSX.Element[];
+function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
+  frac = frac ?? 0.5;
+  const s: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'row',
+  }
+  const s1: CSSProperties = {
+    flexShrink: 0,
+    flexGrow: frac,
+    flexBasis: 0,
+    borderRight: '1px solid black',
+  }
+  const s2: CSSProperties = {
+    flexShrink: 0,
+    flexGrow: 1 - frac,
+    flexBasis: 0,
+  }
+  return <div style={s}><div style={s1} >{x}</div><div style={s2} >{y}</div></div>;
+}
+
 export function renderState(state: State, dispatch: Dispatch, currentRange: Rng | undefined): JSX.Element {
   let stateRepn: JSX.Element[];
   const tdStyle: CSSProperties = {
@@ -165,6 +186,9 @@ export function renderState(state: State, dispatch: Dispatch, currentRange: Rng 
      * /} ${stringOfMeta(state.meta)}
      * `; */
   }
-  return <table className="state"><tr><td style={tdStyle}>{renderToks(state, dispatch, currentRange)}</td>
-    {stateRepn} </tr></table>;
+  return hsplit(
+    renderToks(state, dispatch, currentRange),
+    <table className="state"><tr>{stateRepn}</tr></table>,
+    0.20
+  );
 }
