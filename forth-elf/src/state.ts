@@ -12,6 +12,7 @@ export function mkState(toks: Tok[][]): State {
     cframe: {
       pc: { t: 'tokstream', index: 0 },
       program: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 0 } },
+      code: [],
       defining: true,
       readingName: false,
       name: undefined,
@@ -108,6 +109,7 @@ function callIdent(state: State, name: string): State {
   const cframe: StackEntry = { t: 'control', cframe: state.cframe };
   return produce(state, s => {
     s.stack.push(cframe);
+    s.cframe.code = [];
     s.cframe.pc = pcPrev(sigent.program.first); // because we'll increment it later
     s.cframe.defining = false;
   });
@@ -155,6 +157,12 @@ function doCloseParen(state: State, pc: Pc): State {
 }
 
 function execInstruction(state: State, inst: Tok, pc: Pc): State {
+  if (state.cframe.defining) {
+    state = produce(state, s => {
+      s.cframe.code.push(inst);
+    });
+  }
+
   if (state.cframe.readingName) {
     return produce(state, s => {
       s.cframe.name = stringOfTok(inst);
@@ -192,8 +200,10 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
             name: state.cframe.name ?? '_',
             klass: elt.term,
             program: state.cframe.program,
+            code: state.cframe.code,
           });
           s.cframe.program = { first: pcNext(pc), last: pc };
+          s.cframe.code = [];
           s.cframe.name = undefined;
         });
         state = doOpenParen(state);

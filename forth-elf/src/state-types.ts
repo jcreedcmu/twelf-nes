@@ -54,6 +54,7 @@ export type SigEntry = {
   name: string,
   klass: Expr,
   program: Rng,
+  code: Tok[],
 };
 
 export type CtxEntry = {
@@ -78,6 +79,7 @@ export type MetaCtxEntry =
 export type CtlEntry = {
   pc: Pc
   program: Rng,
+  code: Tok[],
   defining: boolean,
   name: string | undefined,
   readingName: boolean,

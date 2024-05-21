@@ -161,6 +161,7 @@ function renderPc(pc: Pc): string {
 
 function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
   let name: (JSX.Element | string)[] = [''];
+  const code = renderCode(ctl.code);
   if (ctl.readingName) {
     name = [`, name: `, <span style={{ color: 'red' }}>?</span>];
   }
@@ -176,7 +177,7 @@ function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, 
   }
   return <span><div className={className.join(' ')} onMouseDown={onMouseDown}>
     {renderPc(ctl.pc)}
-  </div>[def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
+  </div>[def: {ctl.defining ? 'T' : 'F'}, {code}{name}]</span>;
 }
 
 type Lerp = JSX.Element | JSX.Element[];
@@ -201,11 +202,18 @@ function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
   return <div style={s}><div style={s1} >{x}</div><div style={s2} >{y}</div></div>;
 }
 
+function renderCode(code: Tok[]): JSX.Element {
+  return <div className="codeblock">{code.length > 0 ? code.map(stringOfTok).join(' ') : '\u00a0'}</div>;
+}
+
 export function showDupCurrentSelection(state: State, currentSelection: Selection | undefined): JSX.Element | undefined {
   if (currentSelection == undefined)
     return undefined;
   switch (currentSelection.t) {
-    case 'sigItem': return renderSigEntry(state.sig[currentSelection.index]);
+    case 'sigItem': {
+      const sigEntry = state.sig[currentSelection.index];
+      return <div>{renderSigEntry(sigEntry)}<br />{renderCode(sigEntry.code)}</div>;
+    }
     case 'ctlItem': return undefined;
   }
 }
