@@ -97,8 +97,14 @@ export type DataStackEntry = {
   klass: Expr
 };
 
+export type CodeStackEntry = {
+  t: 'code',
+  code: Tok[],
+}
+
 export type StackEntry =
   | DataStackEntry
+  | CodeStackEntry
   | { t: 'control', cframe: CtlEntry };
 
 export type Sig = SigEntry[];
