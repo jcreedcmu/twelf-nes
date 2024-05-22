@@ -8,6 +8,7 @@
 
 % \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 
+\def\aret{\hookleftarrow}
 \def\L{\texttt{(}}
 \def\R{\texttt{)}}
 \def\Lb{\texttt{[}}
@@ -24,6 +25,9 @@
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true}
 \title{A Concatenative Typechecker for LF}
 \author{Jason Reed}
+
+% no extra space after colon
+\AddToHook{cmd/ttfamily/after}{\frenchspacing}
 
 \begin{document}
 \maketitle
@@ -245,4 +249,56 @@ $\rtype$&Push $\rtype : \rkind$ to $\Delta$\\
 \end{tabular}
 }
 \]
+
+\section{Taking Stock}
+I have a vague idea of what I want constants of various types to {\em
+  do}, even if capturing/compiling the program to do that seems rather
+tricky right now. I think there may still be some corner cases around
+deBruijn indices or substitutions or something, so let me work out
+some more examples. My current preferred set of instructions for just forming expressions is something like:
+\[
+{\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{ll}
+\hline
+$\mathtt c$&Push empty substitution to metastack, run $c$'s program\\
+$\rtype$&Push $\rtype : \rkind$ to $\Delta$\\
+$\R$&Pop $A:\rtype$ from $\Delta$, $(\gamma)_\rho$ from $\Gamma$, push $\Pi \gamma . A$ to $\Delta$\\
+$\tr$&Pop $A: \rtype$, Pop $M : A$, append $[M/x]^\nu$ to current stack  \\
+$:$&Set $\nu$ to next token \\
+$\aret$&Pop $A : \rtype$, $S$ from the metastack, push $\nu \cdot S : A$\\
+$n$&Copy $n^{th}$ item from current substitution onto stack\\
+\hline
+\end{tabular}
+}
+\]
+
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+term & program \\
+\hline
+$o : \rtype$ &\texttt{type {:} o $\aret$}\\
+$k : o$ &\texttt{o : k $\aret$}\\
+$\ell : o$ &\texttt{o : $\ell$ $\aret$}\\
+$s : o \to o$&\texttt{o $\tr$ o : s $\aret$} \\
+$a : o \to \rtype$ &\texttt{o $\tr$ type : a $\aret$}\\
+$b : o \to o \to \rtype$ &\texttt{o $\tr$ o $\tr$ type : b $\aret$}\\
+$d : \{x : o\} \to a\ x \to \rtype$ &\texttt{o $\tr$ 1 a $\tr$ type : d $\aret$}\\
+$bt : b\ k\ (s\ \ell)$ &\texttt{$\ell$ s k b : bt $\aret$}\\
+% $bt2 : \{x : o\}\ b\ x\ x$ & \texttt{o : x $\tr$ x x b : bt2 $\aret$}\\
+$bt2 : \{x : o\}\ b\ x\ x$  & \texttt{o $\tr$ 1 1 b : bt2 $\aret$}\\
+$c : (o \to o) \to \rtype$ &\\
+$e : \{x : o\}\{y : o\}\ b\ y\ (s\ x) \to \rtype$ &\\
+$f : \{x : o\}\ a\ (s\ x) \to \rtype$ &\\
+$et : e\ \ell\ k\ bt$ &\\
+$et2 : e\ k\ (s\ k)\ (bt2\ (s\ k))$ &\\
+$ct : c\ (\lambda x . s\ (s\ x))$ &\\
+$h : ((o \to o) \to o) \to \rtype$ &\\
+$ht : h\ (\lambda (f\cn o\to o) . f\ (s\ k))$ &\\
+\hline
+\end{tabular}\]
+}
+
+The effect of running \texttt{o} is putting $o : \rtype$ on the stack.
+
 \end{document}
