@@ -46,12 +46,24 @@ function popMeta(state: State): undefined | { elt: MetaCtxEntry, newState: State
   return { elt, newState };
 }
 
-function formPi(ctx: Ctx, base: DataStackEntry): StackEntry {
-  let term = base.term;
+function getPi(ctx: Ctx, base: Expr): Expr {
+  let term = base;
   for (let i = ctx.length - 1; i >= 0; i--) {
     term = { t: 'pi', name: ctx[i].name, a: ctx[i].klass, b: term };
   }
-  return { t: 'data', term, klass: base.klass };
+  return term;
+}
+
+function formPi(ctx: Ctx, base: DataStackEntry): StackEntry {
+  return { t: 'data', term: getPi(ctx, base.term), klass: base.klass };
+}
+
+function formLambda(ctx: Ctx, base: DataStackEntry): StackEntry {
+  let term = base.term;
+  for (let i = ctx.length - 1; i >= 0; i--) {
+    term = { t: 'lam', name: ctx[i].name, a: ctx[i].klass, m: term };
+  }
+  return { t: 'data', term, klass: getPi(ctx, base.klass) };
 }
 
 function formRoot(name: string, sub: Sub, base: DataStackEntry): StackEntry {
@@ -67,7 +79,8 @@ function flatten(e: Expr): string[] {
   switch (e.t) {
     case 'type': return ['type'];
     case 'kind': return ['kind'];
-    case 'pi': throw new Error(`Didn't expect to flatten anything but base types!`);
+    case 'pi': return ['pi', ...flatten(e.a), '.', ...flatten(e.b)] // XXX doesn't respect alpha
+    case 'lam': return ['lam', ...flatten(e.a), '.', ...flatten(e.m)] // XXX doesn't respect alpha
     case 'appc': {
       const spine: string[] = e.spine.map(x => flatten(x)).reverse().flatMap(x => x);
       return [...spine, e.cid];
@@ -152,6 +165,34 @@ function doCloseParen(state: State, pc: Pc): State {
     return produce(state, s => { s.error = `expected ctx during >`; });
 
   const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
+
+  return produce(state2, s => {
+    s.cframe.program.last = pc;
+    s.stack.push(newStackEntry);
+  });
+}
+
+function doLambdaCloseParen(state: State, pc: Pc): State {
+  // pop body of lambda
+  const pr1 = popStack(state);
+  if (pr1 == undefined)
+    return produce(state, s => { s.error = `stack underflow during )`; });
+  const { elt: stackEntry, newState: state1 } = pr1;
+
+  if (stackEntry.t != 'data') {
+    return errorState(state, `expected data frame on stack`);
+  }
+
+  // pop argument context
+  const pr2 = popMeta(state1);
+  if (pr2 == undefined)
+    return produce(state1, s => { s.error = `metacontext underflow during )`; });
+  const { elt: metaEntry, newState: state2 } = pr2;
+
+  if (metaEntry.t != 'ctx')
+    return produce(state, s => { s.error = `expected ctx during >`; });
+
+  const newStackEntry: StackEntry = formLambda(metaEntry.ctx, stackEntry);
 
   return produce(state2, s => {
     s.cframe.program.last = pc;
@@ -367,17 +408,21 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
     case 'id': {
       switch (inst.name) {
-        case 'o': // fallthrough intentional
-        case 'ell': // fallthrough intentional
-        case 's': // fallthrough intentional
-        case 'b': // fallthrough intentional
+        // all of this fallthrough intentional it's effectively an
+        // explicit allow-list for constants.
+        case 'o':
+        case 'ell':
+        case 's':
+        case 'b':
         case 'k':
         case 'bt':
         case 'bt2':
         case 'e':
+        case 'c':
           return callSigIdent(state, inst.name);
 
-        case 'x': // fallthrough intentional
+        // fallthrough intentional. Allow-list for variables.
+        case 'x':
         case 'y':
           return callVar(state, inst.name);
 
@@ -416,6 +461,8 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
     case '(': return doOpenParen(state);
     case ')': return doCloseParen(state, pc);
+    case '[': return doOpenParen(state);
+    case ']': return doLambdaCloseParen(state, pc);
 
     case ':': {
       return produce(state, s => {
@@ -425,10 +472,6 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
     case 'ret': return doReturn(state, pc);
     case 'grab': return doGrab(state, pc);
-
-    default: return produce(state, s => {
-      s.error = `unimplemented instruction ${inst.t}`;
-    });
   }
 }
 

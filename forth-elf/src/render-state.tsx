@@ -41,29 +41,11 @@ export function texOfName(name: string): string {
     return name;
 }
 
-function appToSpine(head: string, spine: Expr[]): string {
-  if (spine.length == 0)
-    return head;
-  else
-    return `${head}·(${spine.map(exprToString).join(",")})`;
-}
-
 function appToSpineTex(head: string, spine: Expr[]): string {
   if (spine.length == 0)
     return head;
   else
     return `${head}\\cdot(${spine.map(exprToTex).join(",")})`;
-}
-
-function exprToString(e: Expr): string {
-  switch (e.t) {
-    case 'type': return 'Type';
-    case 'kind': return 'Kind';
-    case 'pi': return e.name == undefined ? `(${exprToString(e.a)} -> ${exprToString(e.b)})`
-      : `{${e.name}:${exprToString(e.a)}} ${exprToString(e.b)}`;
-    case 'appc': return appToSpine(e.cid, e.spine);
-    case 'appv': return appToSpine(e.head, e.spine);
-  }
 }
 
 function exprToTex(e: Expr): string {
@@ -72,6 +54,7 @@ function exprToTex(e: Expr): string {
     case 'kind': return '\\mathsf{kind}';
     case 'pi': return e.name == undefined ? `(${exprToTex(e.a)} \\to ${exprToTex(e.b)})`
       : `\\left( \\prod_{ ${e.name} {:} ${exprToTex(e.a)}}  ${exprToTex(e.b)} \\right)`;
+    case 'lam': return `\\left( \\lambda ( ${e.name ?? '_'} {:} ${exprToTex(e.a)}).  ${exprToTex(e.m)} \\right)`;
     case 'appc': return appToSpineTex(texOfName(e.cid), e.spine);
     case 'appv': return appToSpineTex(texOfName(e.head), e.spine);
   }

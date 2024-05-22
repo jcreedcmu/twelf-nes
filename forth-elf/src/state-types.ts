@@ -33,6 +33,7 @@ export type Expr =
   | { t: 'type' }
   | { t: 'kind' }
   | { t: 'pi', name: string | undefined, a: Expr, b: Expr }
+  | { t: 'lam', name: string | undefined, a: Expr, m: Expr }
   | { t: 'appc', cid: string, spine: Expr[] }
   | { t: 'appv', head: string, spine: Expr[] }
 
