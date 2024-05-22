@@ -141,11 +141,9 @@ function renderSig(sig: Sig, dispatch: Dispatch, currentSelection: Selection | u
 function renderStackFrame(state: State, frame: StackEntry): JSX.Element {
   switch (frame.t) {
     case 'data':
-      return <span><Tex expr={subToTex(frame)} /></span>;
+      return <span><Tex expr={subToTex(frame)} />{renderCode(frame.code)}</span>;
     case 'control':
       return renderCtlEntry(state, frame.cframe, undefined, (e) => { }); // XXX these can't be clicked on
-    case 'code':
-      return renderCode(frame.code);
   }
 }
 

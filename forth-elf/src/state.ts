@@ -56,7 +56,12 @@ function getPi(ctx: Ctx, base: Expr): Expr {
 }
 
 function formPi(ctx: Ctx, base: DataStackEntry): StackEntry {
-  return { t: 'data', term: getPi(ctx, base.term), klass: base.klass };
+  return {
+    t: 'data',
+    term: getPi(ctx, base.term),
+    klass: base.klass,
+    code: [{ t: 'id', name: 'formPi???' }],
+  };
 }
 
 function formLambda(ctx: Ctx, base: DataStackEntry): StackEntry {
@@ -64,14 +69,20 @@ function formLambda(ctx: Ctx, base: DataStackEntry): StackEntry {
   for (let i = ctx.length - 1; i >= 0; i--) {
     term = { t: 'lam', name: ctx[i].name, a: ctx[i].klass, m: term };
   }
-  return { t: 'data', term, klass: getPi(ctx, base.klass) };
+  return {
+    t: 'data',
+    term,
+    klass: getPi(ctx, base.klass),
+    code: [{ t: 'id', name: 'formLambda???' }],
+  };
 }
 
-function formRoot(name: string, sub: Sub, base: DataStackEntry): StackEntry {
+function formRoot(name: string, sub: Sub, base: DataStackEntry, code?: Tok[]): StackEntry {
   return {
     t: 'data',
     term: { t: 'appc', cid: name, spine: sub.map(x => x.term) },
-    klass: base.term
+    klass: base.term,
+    code: code ?? [{ t: 'id', name: 'formRoot???' }],
   };
 }
 
@@ -169,48 +180,20 @@ function doCloseParen(state: State, pc: Pc): State {
   if (metaEntry.t != 'ctx')
     return produce(state, s => { s.error = `expected ctx during >`; });
 
-  const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
-
+  let newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
+  if (newStackEntry.t == 'data') {
+    newStackEntry = {
+      t: 'data',
+      term: newStackEntry.term,
+      klass: newStackEntry.klass,
+      code: metaEntry.code.slice(0, -1), // get rid of closeparen
+    }
+  }
   return produce(state2, s => {
     s.cframe.codeDepth--;
     s.cframe.program.last = pc;
     s.stack.push(newStackEntry);
   });
-}
-
-function doCloseParenWithCode(state: State, pc: Pc): { state: State, code: Tok[] } {
-  function err(msg: string): { state: State, code: Tok[] } {
-    return { state: errorState(state, msg), code: [] };
-  }
-  // pop body of pi
-  const pr1 = popStack(state);
-  if (pr1 == undefined)
-    return err(`stack underflow during )`);
-  const { elt: stackEntry, newState: state1 } = pr1;
-
-  if (stackEntry.t != 'data') {
-    return err(`expected data frame on stack`);
-  }
-
-  // pop argument context
-  const pr2 = popMeta(state1);
-  if (pr2 == undefined)
-    return err(`metacontext underflow during )`);
-  const { elt: metaEntry, newState: state2 } = pr2;
-
-  if (metaEntry.t != 'ctx')
-    return err(`expected ctx during >`);
-
-  const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
-
-  return {
-    state: produce(state2, s => {
-      s.cframe.codeDepth--;
-      s.cframe.program.last = pc;
-      s.stack.push(newStackEntry);
-    }),
-    code: metaEntry.code,
-  };
 }
 
 function doLambdaCloseParen(state: State, pc: Pc): State {
@@ -240,41 +223,6 @@ function doLambdaCloseParen(state: State, pc: Pc): State {
     s.cframe.program.last = pc;
     s.stack.push(newStackEntry);
   });
-}
-
-function doLambdaCloseParenWithCode(state: State, pc: Pc): { state: State, code: Tok[] } {
-  function err(msg: string): { state: State, code: Tok[] } {
-    return { state: errorState(state, msg), code: [] };
-  }
-  // pop body of lambda
-  const pr1 = popStack(state);
-  if (pr1 == undefined)
-    return err(`stack underflow during )`);
-  const { elt: stackEntry, newState: state1 } = pr1;
-
-  if (stackEntry.t != 'data') {
-    return err(`expected data frame on stack`);
-  }
-
-  // pop argument context
-  const pr2 = popMeta(state1);
-  if (pr2 == undefined)
-    return err(`metacontext underflow during )`);
-  const { elt: metaEntry, newState: state2 } = pr2;
-
-  if (metaEntry.t != 'ctx')
-    return err(`expected ctx during >`);
-
-  const newStackEntry: StackEntry = formLambda(metaEntry.ctx, stackEntry);
-
-  return {
-    state: produce(state2, s => {
-      s.cframe.codeDepth--;
-      s.cframe.program.last = pc;
-      s.stack.push(newStackEntry);
-    }),
-    code: metaEntry.code,
-  };
 }
 
 function doReturn(state: State, pc: Pc): State {
@@ -316,7 +264,9 @@ function doReturn(state: State, pc: Pc): State {
 
   return produce(ms, s => {
     s.cframe = celt.cframe;
-    s.stack.push(formRoot(name, mframe.sub, sframe));
+    // could put [{t: 'id', name }] here instead of [] and prevent ids
+    // from adding code eagerly earlier during parsing...?
+    s.stack.push(formRoot(name, mframe.sub, sframe, []));
   });
 }
 
@@ -393,6 +343,7 @@ function callVar(state: State, name: string): State {
             t: 'data',
             term: sfr.term,
             klass: sfr.klass,
+            code: [{ t: 'id', name }],
           });
         });
       } break;
@@ -409,6 +360,7 @@ function callVar(state: State, name: string): State {
             t: 'data',
             term: { t: 'appv', head: name, spine: [] },
             klass: cfr.klass,
+            code: [{ t: 'id', name }],
           });
         });
       }
@@ -461,12 +413,17 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
   switch (inst.t) {
     case 'type': return produce(state, s => {
       s.cframe.program.last = pc;
-      s.stack.push({ t: 'data', term: { t: 'type' }, klass: { t: 'kind' } });
+      s.stack.push({
+        t: 'data',
+        term: { t: 'type' },
+        klass: { t: 'kind' },
+        code: [{ t: 'type' }],
+      });
     });
 
     case '.': {
-      let metaCode;
-      ({ state, code: metaCode } = doCloseParenWithCode(state, pc));
+
+      state = doCloseParen(state, pc);
 
       if (state.error)
         return state;
@@ -491,7 +448,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
           klass: elt.term,
           program: state.cframe.program,
           code: state.cframe.code,
-          metaCode: metaCode,
+          metaCode: [...elt.code, { t: 'ret' }],
         });
         s.cframe.program = { first: pcNext(pc), last: pc };
         s.cframe.code = [];
@@ -542,7 +499,9 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
       const oldCtx = state.meta[state.meta.length - 1];
       if (oldCtx.t != 'ctx')
         return produce(state, s => { s.error = `expected ctx during ->`; });
+      const newCode: Tok[] = [...oldCtx.code, ...elt.code];
       const newCtx = produce(oldCtx, c => {
+        c.code = newCode;
         c.ctx.push({
           name: state.cframe.name, klass: elt.term,
           range: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 1 } }
@@ -551,6 +510,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
       return produce(newState, s => {
         s.cframe.name = undefined;
         s.meta[state.meta.length - 1] = newCtx;
+
       });
     }
 
