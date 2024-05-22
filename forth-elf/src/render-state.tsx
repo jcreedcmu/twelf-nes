@@ -240,7 +240,10 @@ export function showDupCurrentSelection(state: State, currentSelection: Selectio
   switch (currentSelection.t) {
     case 'sigItem': {
       const sigEntry = state.sig[currentSelection.index];
-      return <div>{renderSigEntry(sigEntry)}<br />{renderCode(sigEntry.code)}</div>;
+      return <div>{renderSigEntry(sigEntry)}<br />
+        {renderCode(sigEntry.code)}<br />
+        {renderCode(sigEntry.metaCode)}<br />
+      </div>;
     }
     case 'ctlItem': return undefined;
   }
@@ -290,7 +293,6 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
 
   const dupCurrentSelection = showDupCurrentSelection(state, currentSelection);
   return <div>
-    <b>MetaCode</b>: {renderCode(state.metaCode)}<br />
     <b>Control</b>: {renderCtlEntry(state, state.cframe, currentSelection, dispatch)}<br />
     {hsplit(
       renderAllCode(state, dispatch, currentSelection),

@@ -9,7 +9,6 @@ const ITERATIONS_LIMIT = 1000;
 
 export function mkState(toks: Tok[][]): State {
   return {
-    metaCode: [],
     cframe: {
       pc: { t: 'tokstream', index: 0 },
       program: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 0 } },
@@ -109,11 +108,10 @@ function callSigIdent(state: State, name: string): State {
   const sigma: MetaCtxEntry = {
     t: 'sub',
     sub: [],
-    code: state.metaCode,
+    code: [],
   };
 
   state = produce(state, s => {
-    s.metaCode = [];
     s.meta.push(sigma);
   });
 
@@ -140,11 +138,10 @@ function doOpenParen(state: State) {
   const gamma: MetaCtxEntry = {
     t: 'ctx',
     ctx: [],
-    code: state.metaCode,
+    code: [],
   };
 
   return produce(state, s => {
-    s.metaCode = [];
     s.cframe.codeDepth++;
     s.meta.push(gamma);
   });
@@ -181,6 +178,41 @@ function doCloseParen(state: State, pc: Pc): State {
   });
 }
 
+function doCloseParenWithCode(state: State, pc: Pc): { state: State, code: Tok[] } {
+  function err(msg: string): { state: State, code: Tok[] } {
+    return { state: errorState(state, msg), code: [] };
+  }
+  // pop body of pi
+  const pr1 = popStack(state);
+  if (pr1 == undefined)
+    return err(`stack underflow during )`);
+  const { elt: stackEntry, newState: state1 } = pr1;
+
+  if (stackEntry.t != 'data') {
+    return err(`expected data frame on stack`);
+  }
+
+  // pop argument context
+  const pr2 = popMeta(state1);
+  if (pr2 == undefined)
+    return err(`metacontext underflow during )`);
+  const { elt: metaEntry, newState: state2 } = pr2;
+
+  if (metaEntry.t != 'ctx')
+    return err(`expected ctx during >`);
+
+  const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
+
+  return {
+    state: produce(state2, s => {
+      s.cframe.codeDepth--;
+      s.cframe.program.last = pc;
+      s.stack.push(newStackEntry);
+    }),
+    code: metaEntry.code,
+  };
+}
+
 function doLambdaCloseParen(state: State, pc: Pc): State {
   // pop body of lambda
   const pr1 = popStack(state);
@@ -208,6 +240,41 @@ function doLambdaCloseParen(state: State, pc: Pc): State {
     s.cframe.program.last = pc;
     s.stack.push(newStackEntry);
   });
+}
+
+function doLambdaCloseParenWithCode(state: State, pc: Pc): { state: State, code: Tok[] } {
+  function err(msg: string): { state: State, code: Tok[] } {
+    return { state: errorState(state, msg), code: [] };
+  }
+  // pop body of lambda
+  const pr1 = popStack(state);
+  if (pr1 == undefined)
+    return err(`stack underflow during )`);
+  const { elt: stackEntry, newState: state1 } = pr1;
+
+  if (stackEntry.t != 'data') {
+    return err(`expected data frame on stack`);
+  }
+
+  // pop argument context
+  const pr2 = popMeta(state1);
+  if (pr2 == undefined)
+    return err(`metacontext underflow during )`);
+  const { elt: metaEntry, newState: state2 } = pr2;
+
+  if (metaEntry.t != 'ctx')
+    return err(`expected ctx during >`);
+
+  const newStackEntry: StackEntry = formLambda(metaEntry.ctx, stackEntry);
+
+  return {
+    state: produce(state2, s => {
+      s.cframe.codeDepth--;
+      s.cframe.program.last = pc;
+      s.stack.push(newStackEntry);
+    }),
+    code: metaEntry.code,
+  };
 }
 
 function doReturn(state: State, pc: Pc): State {
@@ -350,6 +417,22 @@ function callVar(state: State, name: string): State {
   return errorState(state, `couldn't find variable ${name}`);
 }
 
+function compileInstruction(state: State, inst: Tok): State {
+  let ms = state;
+  const popMetaResult = popMeta(ms);
+  if (popMetaResult == undefined)
+    return errorState(state, `ctl underflow during compile`);
+  const { elt: mframe, newState: state0 } = popMetaResult;
+  ms = state0;
+
+  const newMfr = produce(mframe, s => {
+    s.code.push(inst);
+  });
+  return produce(state0, s => {
+    s.meta.push(newMfr);
+  });
+}
+
 // XXX don't take pc as arg, get from cframe instead
 function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
@@ -363,9 +446,9 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
   // deprecated version
   const outInst = state.cframe.codeDepth == 0 ? metaOutInst : inst;
 
+  state = compileInstruction(state, metaOutInst);
   state = produce(state, s => {
     s.cframe.code.push(outInst);
-    s.metaCode.push(metaOutInst);
   });
 
   if (state.cframe.readingName) {
@@ -382,14 +465,17 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
     });
 
     case '.': {
-      state = doCloseParen(state, pc);
+      let metaCode;
+      ({ state, code: metaCode } = doCloseParenWithCode(state, pc));
+
       if (state.error)
         return state;
 
       const popResult = popStack(state);
       if (popResult == undefined)
         return produce(state, s => { s.error = `stack underflow during .`; });
-      const { elt, newState } = popResult;
+      let elt;
+      ({ elt, newState: state } = popResult);
 
       if (elt.t != 'data') {
         return errorState(state, `expected data frame on stack`);
@@ -399,12 +485,13 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
         return produce(state, s => { s.error = `expected classifier on stack during .`; });
       }
       const emptyProgram: Tok[] = [];
-      state = produce(newState, s => {
+      state = produce(state, s => {
         s.sig.push({
           name: state.cframe.name ?? '_',
           klass: elt.term,
           program: state.cframe.program,
           code: state.cframe.code,
+          metaCode: metaCode,
         });
         s.cframe.program = { first: pcNext(pc), last: pc };
         s.cframe.code = [];

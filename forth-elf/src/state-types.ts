@@ -59,6 +59,7 @@ export type SigEntry = {
   klass: Expr,
   program: Rng,
   code: Tok[],
+  metaCode: Tok[],
 };
 
 export type CtxEntry = {
@@ -108,7 +109,6 @@ export type Stack = StackEntry[];
 export type Toks = Tok[];
 
 export type State = {
-  metaCode: Tok[],
   cframe: CtlEntry,
   sig: Sig,
   ctx: Ctx,
