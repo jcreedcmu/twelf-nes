@@ -373,6 +373,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
         case 'b': // fallthrough intentional
         case 'k':
         case 'bt':
+        case 'bt2':
         case 'e':
           return callSigIdent(state, inst.name);
 
