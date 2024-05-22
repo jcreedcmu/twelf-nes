@@ -258,6 +258,48 @@ function doGrab(state: State, pc: Pc): State {
 
 }
 
+function callVar(state: State, name: string): State {
+  const { pc } = state.cframe;
+  loop:
+  for (let i = state.meta.length - 1; i >= 0; i--) {
+    const fr = state.meta[i];
+    switch (fr.t) {
+      case 'sub': {
+        // XXX is this search direction correct?
+        const sfr = fr.sub.find(sfr => sfr.name == name);
+        if (sfr == undefined)
+          continue loop;
+        return produce(state, s => {
+          s.cframe.program.last = pc;
+          s.stack.push({
+            t: 'data',
+            term: sfr.term,
+            klass: sfr.klass,
+          });
+        });
+      } break;
+      case 'ctx': {
+        // XXX is this search direction correct?
+        const cfr = fr.ctx.find(cfr => cfr.name == name);
+        if (cfr == undefined)
+          continue loop;
+
+        // XXX should execute variable's typechecking program instead
+        return produce(state, s => {
+          s.cframe.program.last = pc;
+          s.stack.push({
+            t: 'data',
+            term: { t: 'appv', head: name, spine: [] },
+            klass: cfr.klass,
+          });
+        });
+      }
+    }
+  }
+  return errorState(state, `couldn't find variable ${name}`);
+}
+
+// XXX don't take pc as arg, get from cframe instead
 function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
   if (inst.t == '.') {
@@ -336,14 +378,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
         case 'x': // fallthrough intentional
         case 'y':
-          return produce(state, s => {
-            s.cframe.program.last = pc;
-            s.stack.push({
-              t: 'data',
-              term: { t: 'appv', head: inst.name, spine: [] },
-              klass: { t: 'appc', cid: 'o', spine: [] },
-            });
-          });
+          return callVar(state, inst.name);
 
         default: return produce(state, s => {
           s.error = `unimplemented identifier ${inst.name}`;
