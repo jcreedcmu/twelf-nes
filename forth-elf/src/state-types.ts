@@ -48,6 +48,7 @@ export type Tok =
   | { t: '[' }
   | { t: ']' }
   | { t: '.' }
+  | { t: ';' }
   | { t: 'ret' }
   | { t: 'id', name: string }
   ;

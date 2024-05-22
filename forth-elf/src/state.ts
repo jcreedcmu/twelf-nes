@@ -60,7 +60,7 @@ function formPi(ctx: Ctx, base: DataStackEntry): StackEntry {
     t: 'data',
     term: getPi(ctx, base.term),
     klass: base.klass,
-    code: [{ t: 'id', name: 'formPi???' }],
+    code: base.code,
   };
 }
 
@@ -186,7 +186,7 @@ function doCloseParen(state: State, pc: Pc): State {
       t: 'data',
       term: newStackEntry.term,
       klass: newStackEntry.klass,
-      code: metaEntry.code.slice(0, -1), // get rid of closeparen
+      code: metaEntry.code,
     }
   }
   return produce(state2, s => {
@@ -385,10 +385,42 @@ function compileInstruction(state: State, inst: Tok): State {
   });
 }
 
+
+function doSemicolon(state: State, pc: Pc): State {
+  const popResult = popStack(state);
+  if (popResult == undefined)
+    return produce(state, s => { s.error = `stack underflow during .`; });
+  let elt;
+  ({ elt, newState: state } = popResult);
+
+  if (elt.t != 'data') {
+    return errorState(state, `expected data frame on stack`);
+  }
+
+  if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
+    return produce(state, s => { s.error = `expected classifier on stack during .`; });
+  }
+  const emptyProgram: Tok[] = [];
+  const name = state.cframe.name ?? '_';
+  const metaCode: Tok[] = [...elt.code, { t: ':' }, { t: 'id', name }, { t: 'ret' }];
+  return produce(state, s => {
+    s.sig.push({
+      name: state.cframe.name ?? '_',
+      klass: elt.term,
+      program: state.cframe.program,
+      code: state.cframe.code,
+      metaCode,
+    });
+    s.cframe.program = { first: pcNext(pc), last: pc };
+    s.cframe.code = [];
+    s.cframe.name = undefined;
+  });
+}
+
 // XXX don't take pc as arg, get from cframe instead
 function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
-  // new version, always translate
+  // also deprecated
   let metaOutInst = inst;
   switch (inst.t) {
     case '.': metaOutInst = { t: 'ret' }; break;
@@ -398,7 +430,6 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
   // deprecated version
   const outInst = state.cframe.codeDepth == 0 ? metaOutInst : inst;
 
-  state = compileInstruction(state, metaOutInst);
   state = produce(state, s => {
     s.cframe.code.push(outInst);
   });
@@ -411,49 +442,30 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
   }
 
   switch (inst.t) {
-    case 'type': return produce(state, s => {
-      s.cframe.program.last = pc;
-      s.stack.push({
-        t: 'data',
-        term: { t: 'type' },
-        klass: { t: 'kind' },
-        code: [{ t: 'type' }],
+    case 'type': {
+      state = compileInstruction(state, { t: 'type' });
+      return produce(state, s => {
+        s.cframe.program.last = pc;
+        s.stack.push({
+          t: 'data',
+          term: { t: 'type' },
+          klass: { t: 'kind' },
+          code: [{ t: 'type' }],
+        });
       });
-    });
+    }
 
     case '.': {
-
       state = doCloseParen(state, pc);
 
       if (state.error)
         return state;
 
-      const popResult = popStack(state);
-      if (popResult == undefined)
-        return produce(state, s => { s.error = `stack underflow during .`; });
-      let elt;
-      ({ elt, newState: state } = popResult);
+      state = doSemicolon(state, pc);
 
-      if (elt.t != 'data') {
-        return errorState(state, `expected data frame on stack`);
-      }
+      if (state.error)
+        return state;
 
-      if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
-        return produce(state, s => { s.error = `expected classifier on stack during .`; });
-      }
-      const emptyProgram: Tok[] = [];
-      state = produce(state, s => {
-        s.sig.push({
-          name: state.cframe.name ?? '_',
-          klass: elt.term,
-          program: state.cframe.program,
-          code: state.cframe.code,
-          metaCode: [...elt.code, { t: 'ret' }],
-        });
-        s.cframe.program = { first: pcNext(pc), last: pc };
-        s.cframe.code = [];
-        s.cframe.name = undefined;
-      });
       state = doOpenParen(state);
       return state;
     }
@@ -527,6 +539,7 @@ function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
     case 'ret': return doReturn(state, pc);
     case 'grab': return doGrab(state, pc);
+    case ';': return doSemicolon(state, pc);
   }
 }
 
