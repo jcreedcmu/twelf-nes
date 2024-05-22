@@ -9,6 +9,7 @@ const ITERATIONS_LIMIT = 1000;
 
 export function mkState(toks: Tok[][]): State {
   return {
+    metaCode: [],
     cframe: {
       pc: { t: 'tokstream', index: 0 },
       program: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 0 } },
@@ -18,7 +19,7 @@ export function mkState(toks: Tok[][]): State {
       name: undefined,
     },
     ctx: [],
-    meta: [{ t: 'ctx', ctx: [] }],
+    meta: [{ t: 'ctx', ctx: [], code: [] }],
     sig: [],
     stack: [],
     toks: toks.flatMap(x => x),
@@ -108,9 +109,11 @@ function callSigIdent(state: State, name: string): State {
   const sigma: MetaCtxEntry = {
     t: 'sub',
     sub: [],
+    code: state.metaCode,
   };
 
   state = produce(state, s => {
+    s.metaCode = [];
     s.meta.push(sigma);
   });
 
@@ -137,9 +140,11 @@ function doOpenParen(state: State) {
   const gamma: MetaCtxEntry = {
     t: 'ctx',
     ctx: [],
+    code: state.metaCode,
   };
 
   return produce(state, s => {
+    s.metaCode = [];
     s.cframe.codeDepth++;
     s.meta.push(gamma);
   });
@@ -348,17 +353,19 @@ function callVar(state: State, name: string): State {
 // XXX don't take pc as arg, get from cframe instead
 function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
-  let outInst = inst;
-
-  if (state.cframe.codeDepth == 0) {
-    switch (inst.t) {
-      case '.': outInst = { t: 'ret' }; break;
-      case '->': outInst = { t: 'grab' }; break;
-    }
+  // new version, always translate
+  let metaOutInst = inst;
+  switch (inst.t) {
+    case '.': metaOutInst = { t: 'ret' }; break;
+    case '->': metaOutInst = { t: 'grab' }; break;
   }
+
+  // deprecated version
+  const outInst = state.cframe.codeDepth == 0 ? metaOutInst : inst;
 
   state = produce(state, s => {
     s.cframe.code.push(outInst);
+    s.metaCode.push(metaOutInst);
   });
 
   if (state.cframe.readingName) {

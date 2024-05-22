@@ -76,8 +76,8 @@ export type SubEntry = {
 
 
 export type MetaCtxEntry =
-  | { t: 'sub', sub: Sub }
-  | { t: 'ctx', ctx: Ctx }
+  | { t: 'sub', sub: Sub, code: Tok[] }
+  | { t: 'ctx', ctx: Ctx, code: Tok[] }
   ;
 
 export type CtlEntry = {
@@ -108,6 +108,7 @@ export type Stack = StackEntry[];
 export type Toks = Tok[];
 
 export type State = {
+  metaCode: Tok[],
   cframe: CtlEntry,
   sig: Sig,
   ctx: Ctx,

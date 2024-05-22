@@ -174,7 +174,7 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   const newline = "\n";
 
   const str = meta.map(e => {
-    return <span><Tex expr={'(' + texOfCtx(e) + ')'} />{newline}</span>;
+    return <span><Tex expr={e.t + '(' + texOfCtx(e) + ')'} />{renderCode(e.code)}{newline}</span>;
   });
 
   return <pre>{str}</pre>;
@@ -290,6 +290,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
 
   const dupCurrentSelection = showDupCurrentSelection(state, currentSelection);
   return <div>
+    <b>MetaCode</b>: {renderCode(state.metaCode)}<br />
     <b>Control</b>: {renderCtlEntry(state, state.cframe, currentSelection, dispatch)}<br />
     {hsplit(
       renderAllCode(state, dispatch, currentSelection),
