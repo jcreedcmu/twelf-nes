@@ -84,6 +84,7 @@ export type CtlEntry = {
   pc: Pc
   program: Rng,
   code: Tok[],
+  codeDepth: number,
   name: string | undefined,
   readingName: boolean,
 };

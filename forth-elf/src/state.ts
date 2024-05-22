@@ -13,6 +13,7 @@ export function mkState(toks: Tok[][]): State {
       pc: { t: 'tokstream', index: 0 },
       program: { first: { t: 'tokstream', index: 0 }, last: { t: 'tokstream', index: 0 } },
       code: [],
+      codeDepth: 0,
       readingName: false,
       name: undefined,
     },
@@ -124,6 +125,7 @@ function callSigIdent(state: State, name: string): State {
     pc: pcPrev({ t: 'sigEntry', sigIx: sigent, tokIx: 0 }),
     program: state.cframe.program, // XXX this duplication is suspicious
     readingName: false,
+    codeDepth: 0,
   }
   return produce(state, s => {
     s.stack.push(cframe);
@@ -138,6 +140,7 @@ function doOpenParen(state: State) {
   };
 
   return produce(state, s => {
+    s.cframe.codeDepth++;
     s.meta.push(gamma);
   });
 }
@@ -167,6 +170,7 @@ function doCloseParen(state: State, pc: Pc): State {
   const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
 
   return produce(state2, s => {
+    s.cframe.codeDepth--;
     s.cframe.program.last = pc;
     s.stack.push(newStackEntry);
   });
@@ -195,6 +199,7 @@ function doLambdaCloseParen(state: State, pc: Pc): State {
   const newStackEntry: StackEntry = formLambda(metaEntry.ctx, stackEntry);
 
   return produce(state2, s => {
+    s.cframe.codeDepth--;
     s.cframe.program.last = pc;
     s.stack.push(newStackEntry);
   });
@@ -343,22 +348,18 @@ function callVar(state: State, name: string): State {
 // XXX don't take pc as arg, get from cframe instead
 function execInstruction(state: State, inst: Tok, pc: Pc): State {
 
-  if (inst.t == '.') {
-    state = produce(state, s => {
-      s.cframe.code.push({ t: 'ret' });
-    });
-  }
-  else if (inst.t == '->') {
-    state = produce(state, s => {
-      s.cframe.code.push({ t: 'grab' });
-    });
-  }
-  else {
-    state = produce(state, s => {
-      s.cframe.code.push(inst);
-    });
+  let outInst = inst;
+
+  if (state.cframe.codeDepth == 0) {
+    switch (inst.t) {
+      case '.': outInst = { t: 'ret' }; break;
+      case '->': outInst = { t: 'grab' }; break;
+    }
   }
 
+  state = produce(state, s => {
+    s.cframe.code.push(outInst);
+  });
 
   if (state.cframe.readingName) {
     return produce(state, s => {

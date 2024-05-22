@@ -52,9 +52,9 @@ function exprToTex(e: Expr): string {
   switch (e.t) {
     case 'type': return '\\mathsf{type}';
     case 'kind': return '\\mathsf{kind}';
-    case 'pi': return e.name == undefined ? `(${exprToTex(e.a)} \\to ${exprToTex(e.b)})`
+    case 'pi': return e.name == undefined ? `(${exprToTex(e.a)}) \\to ${exprToTex(e.b)}`
       : `\\left( \\prod_{ ${e.name} {:} ${exprToTex(e.a)}}  ${exprToTex(e.b)} \\right)`;
-    case 'lam': return `\\left( \\lambda ( ${e.name ?? '_'} {:} ${exprToTex(e.a)}).  ${exprToTex(e.m)} \\right)`;
+    case 'lam': return ` \\lambda ( ${e.name ?? '_'} {:} ${exprToTex(e.a)}).  ${exprToTex(e.m)} `;
     case 'appc': return appToSpineTex(texOfName(e.cid), e.spine);
     case 'appv': return appToSpineTex(texOfName(e.head), e.spine);
   }
