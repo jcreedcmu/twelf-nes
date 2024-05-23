@@ -341,15 +341,17 @@ $w : \{x : o\}\{y : a\ x\} \{z : b\ x\ y\} \, \rtype$ \\
 }
 This is close to being satisfactory, but I'd like $y$'s type to be a function, and to have the variable
 dependency in the argument. I don't think this is strictly necessary, but it makes things clearer.
-%% Twelf code:
-%% o : type.
-%% a : o -> type.
-%% m : {x: o} a x.
-%% w : {x : o} {y : a x -> o} {z : a (y (m x))} type.
-
-%% k : o.
-%% h : {x : o} a x -> o.
-%% v : w k (h k) (m (h k (m k))).
+I can represent the twelf code
+\begin{verbatim}
+o : type.
+a : o -> type.
+m : {x: o} a x.
+w : {x : o} {y : a x -> o} {z : a (y (m x))} type.
+k : o.
+h : {x : o} a x -> o.
+v : w k (h k) (m (h k (m k))).
+\end{verbatim}
+by
 {\renewcommand{\arraystretch}{1.2}
 \[\begin{tabular}{l|l}
 \hline
@@ -359,13 +361,6 @@ $m : \{x : o\} \, a\ x$ &\texttt{o : x $\to$ x a : m . } \\
 $w : \{x : o\} $&\texttt{o : x $\to$ }\\
 $\ \,\,\quad \{y : a\ x \to o\}$ &\texttt{\ \ ( x a $\to$ o ) : y $\to$}\\
 $\ \,\,\quad \{z : a\ (y\ (m\ x))\} \, \rtype$&\texttt{\ \ x m y a : z $\to$ type : w . } \\
-\hline
-\end{tabular}\]
-}
-I can further inhabit this type family if I do like
-{\renewcommand{\arraystretch}{1.2}
-\[\begin{tabular}{l|l}
-\hline
 $k : o$ & \texttt{o : k .}\\
 $h : \{x : o\}\, a\ x \to o$ & \texttt{o : x $\to$ x a $\to$ o : h .}\\
 $v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{k m k h m k h k w : v .}\\
@@ -433,14 +428,14 @@ And then maybe I could write \texttt{.} as an abbreviation for \texttt{) $\to$ (
 \hline
  & \texttt{( }\\
 $o : \rtype$ & \texttt{type : o .}\\
-$a : o \to \rtype$ & \texttt{ ( o ) $\to$ type : a .}\\
-$m : \{x : o\} \, a\ x$ &\texttt{ ( o : x ) $\to$ x a : m  } \\
-$w : \{x : o\} $&\texttt{ ( o : x )  $\to$}\\
+$a : o \to \rtype$ & \texttt{( o ) $\to$ type : a .}\\
+$m : \{x : o\} \, a\ x$ &\texttt{( o : x ) $\to$ x a : m  } \\
+$w : \{x : o\} $&\texttt{( o : x )  $\to$}\\
 $\ \,\,\quad \{y : a\ x \to o\}$ &\texttt{\ \ ( ( x a ) $\to$ o : y ) $\to$ }\\
 $\ \,\,\quad \{z : a\ (y\ (m\ x))\} \, \rtype$&\texttt{\ \ ( x m y a : z ) $\to$ type : w  . } \\
-$k : o$ & \texttt{ o : k .}\\
-$h : \{x : o\}\, a\ x \to o$ & \texttt{ ( o : x ) $\to$ ( x a ) $\to$ o : h .}\\
-$v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{ k m k h m k h k w : v .}\\
+$k : o$ & \texttt{o : k .}\\
+$h : \{x : o\}\, a\ x \to o$ & \texttt{( o : x ) $\to$ ( x a ) $\to$ o : h .}\\
+$v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{k m k h m k h k w : v .}\\
 \hline
 \end{tabular}\]
 }
@@ -448,4 +443,53 @@ $v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{ k m k h m k h k w : v .}\\
 But this feels genuinely different from my ``low-parenthesis''
 notation in that I explicitly am signalling more information about
 nested arrows. Maybe that's the mistake I've been making this whole time.
+
+\subsection{$\beta$-reduction example}
+What's an example where I really have to carry out an interesting $\beta$-reduction during typechecking?
+The twelf
+\begin{verbatim}
+o : type.
+k : o.
+k2 : o.
+a : o -> type.
+m : {x : o} a x.
+b : o -> o -> o.
+c : {f : o -> o} {x : o} a (f (f x)) -> type.
+d : c ([x] b x k2) k (m (b (b k k2) k2)).
+\end{verbatim}
+Could be represented as
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+$o : \rtype$ & \texttt{type : o .}\\
+$k : o$ & \texttt{o : k .}\\
+$k2 : o$ & \texttt{o : k2 .}\\
+$a : o \to \rtype$ & \texttt{( o ) $\to$ type : a .}\\
+$m : \{x : o\} \, a\ x$ &\texttt{( o : x ) $\to$ x a : m  } \\
+$b : o \to o \to o$ & \texttt{( o ) $\to$ ( o ) $\to$ o : b .}\\
+$c : \{f : o \to o\} $&\texttt{( ( o ) $\to$ o : f ) $\to$}\\
+$\quad\ \,\{ x : o\}\, $&\texttt{\ \ ( o : x ) $\to$}\\
+$\quad\ \,a\  (f\ (f\ x)) \to \rtype$&\texttt{\ \ ( x f f a ) $\to$ type : c .}\\
+$d : c\ (\lambda t . b\ t\ k2)\ k\ (m\ (b\ (b\ k\ k2)\ k2)$&\texttt{k2 k2 k b b m k [ ( o : t ) $\to$ k2 t b ] c : d .}\\
+\hline
+\end{tabular}\]
+}
+This emphasizes that to use the variable $f$ is not just to copy the
+value of $f$ but to {\em run the program of $f$}. When we finally run $c$
+after building up the stack in the definition of $d$, here's what happens:
+\begin{itemize}
+\item we grab and check that the function \texttt{[ ( o : t ) $\to$ k2 t b ]} has the right type $o \to o$,
+which it does, and name it $f$ in the local substitution.
+\item we grab and check the expression \texttt{k} has the right type $o$, which it does, and name it $x$.
+\item we next want to grab and check the expression \texttt{k2 k2 k b b m} at a type, but finding out
+what type takes some computation, so we start running the program \texttt{x f f a}
+\begin{itemize}
+\item we run the relatively trivial `program' $x$, which pushes \texttt{k}.
+\item we run the program $f$, which pops an argument, names it $t$, and runs
+\texttt{k2 t b}, which leaves us with the term \texttt{k2 k b}.
+\item we run $f$ again, which pops an argument, names it $t$, and runs
+\texttt{k2 t b}, which leaves us with the term \texttt{k2 k2 k b b}.
+\end{itemize}
+\item This is the type of the term \texttt{k2 k2 k b b m} that was sitting on the stack already.
+\end{itemize}
 \end{document}
