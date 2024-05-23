@@ -284,10 +284,14 @@ $s : o \to o$&\texttt{o $\tr$ o : s $\aret$} \\
 $a : o \to \rtype$ &\texttt{o $\tr$ type : a $\aret$}\\
 $b : o \to o \to \rtype$ &\texttt{o $\tr$ o $\tr$ type : b $\aret$}\\
 $d : \{x : o\} \to a\ x \to \rtype$ &\texttt{o $\tr$ 1 a $\tr$ type : d $\aret$}\\
-$bt : b\ k\ (s\ \ell)$ &\texttt{$\ell$ s k b : bt $\aret$}\\
+$bt0 : b\ k\ (s\ \ell)$ &\texttt{$\ell$ s k b : bt0 $\aret$}\\
 % $bt2 : \{x : o\}\ b\ x\ x$ & \texttt{o : x $\tr$ x x b : bt2 $\aret$}\\
 $bt2 : \{x : o\}\ b\ x\ x$  & \texttt{o $\tr$ 1 1 b : bt2 $\aret$}\\
+$bt : \{x : o\}\{y : o\}\ b\ x\ y$  & \\
 $c : (o \to o) \to \rtype$ &\\
+$c2 : \{x : o\}\  (\{y : o\}\ b\ x\ y) \to \rtype$ &\\
+$g : \{x : o\}\ c2\ x\ (\lambda y . bt\ x\ y)$  & \\
+
 $e : \{x : o\}\{y : o\}\ b\ y\ (s\ x) \to \rtype$ &\\
 $f : \{x : o\}\ a\ (s\ x) \to \rtype$ &\\
 $et : e\ \ell\ k\ bt$ &\\
