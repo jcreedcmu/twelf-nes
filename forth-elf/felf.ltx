@@ -529,4 +529,23 @@ $r : \{ x : p\}\, c\ (a\ x)\ (q\ (\lambda y . b\ (a\ x)\ y))$&\texttt{( p : x ) 
 \hline
 \end{tabular}\]
 }
+\subsection{Arrowless syntax}
+I notice now $\to$ always comes after \texttt{)}, and I could make parens special one-character
+tokens, so perhaps I might as well write things like:
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+$o : \rtype$ & \texttt{(type : o)}\\
+$a : o \to \rtype$ & \texttt{((o) type : a)}\\
+$m : \{x : o\} \, a\ x$ &\texttt{((o : x) x a : m) } \\
+$w : \{x : o\} $&\texttt{((o : x)  }\\
+$\ \,\,\quad \{y : a\ x \to o\}$ &\texttt{\ \ ((x a) o : y)}\\
+$\ \,\,\quad \{z : a\ (y\ (m\ x))\} \, \rtype$&\texttt{\ \ (x m y a : z) type : w) } \\
+$k : o$ & \texttt{(o : k)}\\
+$h : \{x : o\}\, a\ x \to o$ & \texttt{((o : x) (x a) o : h)}\\
+$v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{(k m k h m k h k w : v)}\\
+\hline
+\end{tabular}\]
+}
+
 \end{document}
