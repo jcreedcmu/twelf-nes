@@ -305,4 +305,72 @@ $ht : h\ (\lambda (f\cn o\to o) . f\ (s\ k))$ &\\
 
 The effect of running \texttt{o} is putting $o : \rtype$ on the stack.
 
+\section{Why Running Existing Code Might Not Work}
+
+One of the earlier prototype versions (at commit \texttt{9f0a16d},
+e.g.) had a notion of program counter that just iterated over the
+original token stream; when you called a constant, it jumped {\em
+  back} to earlier tokens. I worry this strategy might not work for
+variables. When a variable is applied as a head to some spine of
+arguments sitting on the stack, we must run its `type-checking
+program'. I'd like to think that what its program really is is the
+result of substituting variables that occur in it.
+
+Having said that, here's an alternative that might save the idea:
+while executing code in the token stream, it nonetheless has knowledge
+of {\em from where} (living in some other meta-context substitution
+somewhere, maybe?) it's supposed to grab the values corresponding to
+deBruijn indices.
+
+In either case, I'd like a decisive example that exercises the
+relevant situation. I know I want some kind of constant $z$ with a kind like
+\[ w : \{x : A\}\{y : B\} \{z : C\}\, \rtype \]
+where $x$ occurs in $B$, (so that the type $B$ whose structure is $y$'s `program' actually gets modified
+depending on what $x:A$ is) and $y$ occurs in $C$ (so that $y$ is really used as a head).
+
+So what's a minimal signature that meets these requirements?
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l}
+\hline
+$o : \rtype$ \\
+$a : o \to \rtype$ \\
+$b : \{x : o\} \, a\ x   \to \rtype$ \\
+$w : \{x : o\}\{y : a\ x\} \{z : b\ x\ y\} \, \rtype$ \\
+\hline
+\end{tabular}\]
+}
+This is close to being satisfactory, but I'd like $y$'s type to be a function, and to have the variable
+dependency in the argument. I don't think this is strictly necessary, but it makes things clearer.
+%% Twelf code:
+%% o : type.
+%% a : o -> type.
+%% m : {x: o} a x.
+%% w : {x : o} {y : a x -> o} {z : a (y (m x))} type.
+
+%% k : o.
+%% h : {x : o} a x -> o.
+%% v : w k (h k) (m (h k (m k))).
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+$o : \rtype$ & \texttt{type : o .}\\
+$a : o \to \rtype$ & \texttt{o $\to$ type : a .}\\
+$m : \{x : o\} \, a\ x$ &\texttt{o : x $\to$ x a : m . } \\
+$w : \{x : o\} $&\texttt{o : x $\to$ }\\
+$\ \,\,\quad \{y : a\ x \to o\}$ &\texttt{\ \ ( x a $\to$ o ) : y $\to$}\\
+$\ \,\,\quad \{z : a\ (y\ (m\ x))\} \, \rtype$&\texttt{\ \ x m y a : z $\to$ type : w . } \\
+\hline
+\end{tabular}\]
+}
+I can further inhabit this type family if I do like
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+$k : o$ & \texttt{o : k .}\\
+$h : \{x : o\}\, a\ x \to o$ & \texttt{o : x $\to$ x a $\to$ o : h .}\\
+$v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{k m k h m k h k w : v .}\\
+\hline
+\end{tabular}\]
+}
+so that should be a good exercise for the typechecker.
 \end{document}
