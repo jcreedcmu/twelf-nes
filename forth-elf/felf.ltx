@@ -470,7 +470,8 @@ $b : o \to o \to o$ & \texttt{( o ) $\to$ ( o ) $\to$ o : b .}\\
 $c : \{f : o \to o\} $&\texttt{( ( o ) $\to$ o : f ) $\to$}\\
 $\quad\ \,\{ x : o\}\, $&\texttt{\ \ ( o : x ) $\to$}\\
 $\quad\ \,a\  (f\ (f\ x)) \to \rtype$&\texttt{\ \ ( x f f a ) $\to$ type : c .}\\
-$d : c\ (\lambda t . b\ t\ k2)\ k\ (m\ (b\ (b\ k\ k2)\ k2)$&\texttt{k2 k2 k b b m k [ ( o : t ) $\to$ k2 t b ] c : d .}\\
+$d : c\ (\lambda t . b\ t\ k2)\ k$&\texttt{k2 k2 k b b m k }\\
+$\quad\ \, (m\ (b\ (b\ k\ k2)\ k2)$&\texttt{\ \ [ ( o : t ) $\to$ k2 t b ] c : d .}\\
 \hline
 \end{tabular}\]
 }
@@ -492,4 +493,20 @@ what type takes some computation, so we start running the program \texttt{x f f 
 \end{itemize}
 \item This is the type of the term \texttt{k2 k2 k b b m} that was sitting on the stack already.
 \end{itemize}
+
+\subsection{Variable Capture Example}
+What's an example that would show if I was doing something wrong with using named variables and allowing
+variable capture? In the twelf code
+\begin{verbatim}
+o : type.
+p : type.
+a : p -> o.
+d : (o -> o) -> type.
+b : o -> o -> o.
+c : {y : o} d ([x] b y x) -> type.
+q : {f : o -> o} d ([y] f y).
+r : {x : p} c (a x) (q ([y] b (a x) y)).
+\end{verbatim}
+during typechecking of $r$, if we naively substituted $a\ x$ for $y$ in the rest of the type
+$c$, we'd get $d\ (\lambda x . b\ (a\ x)\ x)$, which is not even type correct.
 \end{document}
