@@ -373,4 +373,79 @@ $v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{k m k h m k h k w : v .}\\
 \end{tabular}\]
 }
 so that should be a good exercise for the typechecker.
+
+\subsection{Parenthesization}
+Ultimately I think I'd like to have the canonical way that the user enters the signature to have
+as few parentheses as possible, but for implementation clarity, I'm trying to work out if there's a viable
+notion of `maximal' parenthesization. I think any type that ends up as a target for \texttt{.} or
+$\to$ should be parenthesized, which would turn the above example into
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+$o : \rtype$ & \texttt{( type ) : o .}\\
+$a : o \to \rtype$ & \texttt{( ( o ) $\to$ type ) : a .}\\
+$m : \{x : o\} \, a\ x$ &\texttt{( ( o ) : x $\to$ x a ) : m . } \\
+$w : \{x : o\} $&\texttt{( ( o ) : x $\to$ }\\
+$\ \,\,\quad \{y : a\ x \to o\}$ &\texttt{\ \ ( ( x a ) $\to$ o ) : y $\to$}\\
+$\ \,\,\quad \{z : a\ (y\ (m\ x))\} \, \rtype$&\texttt{\ \ ( x m y a ) : z $\to$ type ) : w . } \\
+$k : o$ & \texttt{( o ) : k .}\\
+$h : \{x : o\}\, a\ x \to o$ & \texttt{( ( o ) : x $\to$ ( x a ) $\to$ o ) : h .}\\
+$v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{( k m k h m k h k w ) : v .}\\
+\hline
+\end{tabular}\]
+}
+
+In some sense \texttt{.} is doing the same job as $\to$, so I might even write this as
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+$o : \rtype$ & \texttt{( type ) : o $\to$}\\
+$a : o \to \rtype$ & \texttt{( ( o ) $\to$ type ) : a $\to$}\\
+$m : \{x : o\} \, a\ x$ &\texttt{( ( o ) : x $\to$ x a ) : m $\to$ } \\
+$w : \{x : o\} $&\texttt{( ( o ) : x $\to$ }\\
+$\ \,\,\quad \{y : a\ x \to o\}$ &\texttt{\ \ ( ( x a ) $\to$ o ) : y $\to$}\\
+$\ \,\,\quad \{z : a\ (y\ (m\ x))\} \, \rtype$&\texttt{\ \ ( x m y a ) : z $\to$ type ) : w $\to$ } \\
+$k : o$ & \texttt{( o ) : k $\to$}\\
+$h : \{x : o\}\, a\ x \to o$ & \texttt{( ( o ) : x $\to$ ( x a ) $\to$ o ) : h $\to$}\\
+$v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{( k m k h m k h k w ) : v $\to$}\\
+\hline
+\end{tabular}\]
+}
+The setting of the current name could be commuted with the \texttt{)}, to give
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+$o : \rtype$ & \texttt{( type : o ) $\to$}\\
+$a : o \to \rtype$ & \texttt{( ( o ) $\to$ type : a ) $\to$}\\
+$m : \{x : o\} \, a\ x$ &\texttt{( ( o : x ) $\to$ x a : m ) $\to$ } \\
+$w : \{x : o\} $&\texttt{( ( o : x )  $\to$ }\\
+$\ \,\,\quad \{y : a\ x \to o\}$ &\texttt{\ \ ( ( x a ) $\to$ o : y ) $\to$}\\
+$\ \,\,\quad \{z : a\ (y\ (m\ x))\} \, \rtype$&\texttt{\ \ ( x m y a : z ) $\to$ type : w ) $\to$ } \\
+$k : o$ & \texttt{( o : k ) $\to$}\\
+$h : \{x : o\}\, a\ x \to o$ & \texttt{( ( o : x ) $\to$ ( x a ) $\to$ o : h ) $\to$}\\
+$v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{( k m k h m k h k w : v ) $\to$}\\
+\hline
+\end{tabular}\]
+}
+And then maybe I could write \texttt{.} as an abbreviation for \texttt{) $\to$ (}:
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+ & \texttt{( }\\
+$o : \rtype$ & \texttt{type : o .}\\
+$a : o \to \rtype$ & \texttt{ ( o ) $\to$ type : a .}\\
+$m : \{x : o\} \, a\ x$ &\texttt{ ( o : x ) $\to$ x a : m  } \\
+$w : \{x : o\} $&\texttt{ ( o : x )  $\to$}\\
+$\ \,\,\quad \{y : a\ x \to o\}$ &\texttt{\ \ ( ( x a ) $\to$ o : y ) $\to$ }\\
+$\ \,\,\quad \{z : a\ (y\ (m\ x))\} \, \rtype$&\texttt{\ \ ( x m y a : z ) $\to$ type : w  . } \\
+$k : o$ & \texttt{ o : k .}\\
+$h : \{x : o\}\, a\ x \to o$ & \texttt{ ( o : x ) $\to$ ( x a ) $\to$ o : h .}\\
+$v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{ k m k h m k h k w : v .}\\
+\hline
+\end{tabular}\]
+}
+
+But this feels genuinely different from my ``low-parenthesis''
+notation in that I explicitly am signalling more information about
+nested arrows. Maybe that's the mistake I've been making this whole time.
 \end{document}
