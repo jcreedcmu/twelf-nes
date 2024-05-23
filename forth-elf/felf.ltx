@@ -509,4 +509,24 @@ r : {x : p} c (a x) (q ([y] b (a x) y)).
 \end{verbatim}
 during typechecking of $r$, if we naively substituted $a\ x$ for $y$ in the rest of the type
 $c$, we'd get $d\ (\lambda x . b\ (a\ x)\ x)$, which is not even type correct.
+{\renewcommand{\arraystretch}{1.2}
+\[\begin{tabular}{l|l}
+\hline
+$o : \rtype$ & \texttt{type : o .}\\
+$p : \rtype$ & \texttt{type : p .}\\
+$a : o \to \rtype$ & \texttt{( o ) $\to$ type : a .}\\
+$d : (o \to o) \to \rtype$ & \texttt{( ( o ) $\to$ o ) $\to$ type : d .}\\
+$b : o \to o \to o$ & \texttt{( o ) $\to$ ( o ) $\to$ o : b .}\\
+$c : \{ y : o\}\, d\ (\lambda x . b\ y\ x) \to \rtype$&\texttt{( o : y ) $\to$}\\
+&\texttt{( [ ( o : x ) $\to$ x y b ] d ) $\to$ }\\
+&\texttt{type : c .}\\
+$q : \{ f : o \to o\}\, d\ (\lambda y . f\ y) $&\texttt{( ( o ) $\to$ o : f ) $\to$}\\
+&\texttt{[ ( o : y ) $\to$ y f ] d : q .}\\
+$r : \{ x : p\}\, c\ (a\ x)\ (q\ (\lambda y . b\ (a\ x)\ y))$&\texttt{( p : x ) $\to$}\\
+&\texttt{\ \ [ ( o : y ) $\to$ y x a b ] q}\\
+&\texttt{\ \ x a c}\\
+&\texttt{: r .}\\
+\hline
+\end{tabular}\]
+}
 \end{document}
