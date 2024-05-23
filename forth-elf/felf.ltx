@@ -544,8 +544,12 @@ $\ \,\,\quad \{z : a\ (y\ (m\ x))\} \, \rtype$&\texttt{\ \ (x m y a : z) type : 
 $k : o$ & \texttt{(o : k)}\\
 $h : \{x : o\}\, a\ x \to o$ & \texttt{((o : x) (x a) o : h)}\\
 $v : w\ k\ (h\ k)\ (m\ (h\ k\ (m\ k)))$& \texttt{(k m k h m k h k w : v)}\\
+$s : o \to o$ & \texttt{((o) o : s)}\\
+$c : (o \to o) \to \rtype$ &\texttt{(((o) o) type : c)}\\
+$ct : c\ (\lambda x . s\ x)$ &\texttt{([(o : x) x s] c : ct)}\\
 \hline
 \end{tabular}\]
 }
+
 
 \end{document}
