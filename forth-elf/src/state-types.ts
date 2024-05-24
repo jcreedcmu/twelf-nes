@@ -57,7 +57,7 @@ export type SigEntry = {
 export type CtxEntry = {
   name: string | undefined,
   klass: Expr,
-  range: Rng,
+  pc: number,
 };
 
 export type SubEntry = {

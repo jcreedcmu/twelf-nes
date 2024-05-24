@@ -215,7 +215,7 @@ function doBind(state: State, pc: number): State {
         c.ctx.push({
           name: elt.name,
           klass: elt.term,
-          range: { first: elt.pc, last: -1 }
+          pc: elt.pc,
         });
       });
 
