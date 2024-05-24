@@ -75,7 +75,6 @@ export type MetaCtxEntry =
 
 export type CtlEntry = {
   pc: number
-  program: Rng,
   defining: boolean,
   name: string | undefined,
   readingName: boolean,

@@ -10,7 +10,6 @@ export function mkState(toks: Tok[][]): State {
   return {
     cframe: {
       pc: 0,
-      program: { first: 0, last: 0 },
       defining: true,
       readingName: false,
       name: undefined,
@@ -153,7 +152,6 @@ function doCloseParen(state: State, pc: number): State {
 
       return produce(state, s => {
         s.cframe.name = undefined;
-        s.cframe.program.last = pc;
         s.stack.push(newStackEntry);
       });
     }
@@ -199,7 +197,6 @@ function doBind(state: State, pc: number): State {
         klass: elt.term,
         program: { first: elt.pc, last: -1 },
       });
-      s.cframe.program = { first: pc + 1, last: pc };
     });
 
     return state;
@@ -258,7 +255,6 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 
   switch (inst.t) {
     case 'type': return produce(state, s => {
-      s.cframe.program.last = pc;
       s.stack.push({ t: 'DataFrame', term: { t: 'type' }, klass: { t: 'kind' } });
     });
 
@@ -278,7 +274,6 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         case 'x': // fallthrough intentional
         case 'y':
           return produce(state, s => {
-            s.cframe.program.last = pc;
             s.stack.push({
               t: 'DataFrame',
               term: { t: 'appv', head: inst.name, spine: [] },
