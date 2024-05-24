@@ -205,7 +205,7 @@ function doCloseParen(state: State, pc: number): State {
 
 function doBind(state: State, pc: number): State {
 
-  if (state.meta.length == 0) { // signature
+  if (state.meta.length == 0) { // case 1/3: signature
     let elt;
     ({ elt, newState: state } = popStack(state));
 
@@ -229,12 +229,13 @@ function doBind(state: State, pc: number): State {
 
   const oldCtx = state.meta[state.meta.length - 1];
   switch (oldCtx.t) {
+    // case 2/3: context
     case 'ctx': {
       let elt;
       ({ elt, newState: state } = popStack(state));
 
       if (elt.t != 'LabDataFrame')
-        throw new Step(`expected labelled data frame on stack during .`);
+        throw new Step(`expected labelled data frame on stack during ->`);
 
       const newCtx = produce(oldCtx, c => {
         c.ctx.push({
@@ -249,8 +250,12 @@ function doBind(state: State, pc: number): State {
       });
     }
     case 'sub': {
+      // case 3/3: substitution
       let elt1; // A : type
       ({ elt: elt1, newState: state } = popStack(state));
+
+      if (elt1.t != 'LabDataFrame')
+        throw new Step(`expected labelled data frame on stack during ->`);
 
       let elt2; // M : A
       ({ elt: elt2, newState: state } = popStack(state));
@@ -261,7 +266,9 @@ function doBind(state: State, pc: number): State {
 
       const sub = produce(oldCtx.sub, c => {
         c.push({
-          term: elt2.term, name: state.cframe.name, klass: elt1.term,
+          term: elt2.term,
+          name: elt1.name,
+          klass: elt1.term,
           pc: -1, // XXX this is wrong
         });
       });
