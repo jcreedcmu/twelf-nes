@@ -53,6 +53,7 @@ function reduce_inner(state: AppState, action: Action): AppState {
           return produce(state, s => {
             s.frame = frame;
             s.currentSelection = undefined;
+            s.currentPcSelection = undefined;
           });
         }
         else {
@@ -64,6 +65,7 @@ function reduce_inner(state: AppState, action: Action): AppState {
         return produce(state, s => {
           s.frame = newFrame;
           s.currentSelection = undefined;
+          s.currentPcSelection = undefined;
         });
       }
     }
@@ -73,6 +75,7 @@ function reduce_inner(state: AppState, action: Action): AppState {
         return produce(state, s => {
           s.frame = newFrame;
           s.currentSelection = undefined;
+          s.currentPcSelection = undefined;
         });
       }
       else {
