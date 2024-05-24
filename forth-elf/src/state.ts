@@ -94,6 +94,9 @@ function exprEqual(e1: Expr, e2: Expr) {
   return f1 == f2;
 }
 
+class Step extends Error {
+  constructor(public msg: string) { super(); }
+}
 
 function errorState(state: State, msg: string): State {
   return produce(state, s => { s.error = msg; });
@@ -112,7 +115,7 @@ function callIdent(state: State, name: string): State {
 
   const sigent = state.sig.find(se => se.name == name);
   if (sigent == undefined) {
-    return errorState(state, `couldn't find ${name}`);
+    throw new Step(`couldn't find ${name}`);
   }
   return produce(state, s => {
     s.ctl.push(state.cframe);
@@ -203,29 +206,29 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 
         const popCtlResult = popCtl(ms);
         if (popCtlResult == undefined)
-          return errorState(ms, `ctl underflow during :`);
+          throw new Step(`ctl underflow during :`);
         const { elt: cframe, newState: state0 } = popCtlResult;
         ms = state0;
 
         const popStackResult = popStack(ms);
         if (popStackResult == undefined)
-          return errorState(state, `ctl underflow during :`);
+          throw new Step(`ctl underflow during :`);
         const { elt: sframe, newState: state1 } = popStackResult;
         ms = state1;
 
         const popMetaResult = popMeta(ms);
         if (popMetaResult == undefined)
-          return errorState(state, `ctl underflow during :`);
+          throw new Step(`ctl underflow during :`);
         const { elt: mframe, newState: state2 } = popMetaResult;
         ms = state2;
 
         const name = state.cframe.name;
         if (name == undefined) {
-          return errorState(state, `expected constant to be named during :`);
+          throw new Step(`expected constant to be named during :`);
         }
 
         if (mframe.t != 'sub') {
-          return errorState(state, `expected sub during .`);
+          throw new Step(`expected sub during .`);
         }
 
         return produce(ms, s => {
@@ -264,13 +267,13 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       if (state.cframe.defining) {
         const popResult = popStack(state);
         if (popResult == undefined)
-          return produce(state, s => { s.error = `stack underflow during ->`; });
+          throw new Step(`stack underflow during ->`);
         const { elt, newState } = popResult;
         if (state.meta.length == 0)
-          return produce(state, s => { s.error = `metacontext underflow during ->`; });
+          throw new Step(`metacontext underflow during ->`);
         const oldCtx = state.meta[state.meta.length - 1];
         if (oldCtx.t != 'ctx')
-          return produce(state, s => { s.error = `expected ctx during ->`; });
+          throw new Step(`expected ctx during ->`);
         const newCtx = produce(oldCtx, c => {
           c.ctx.push({ name: state.cframe.name, klass: elt.term, range: { first: 0, last: 1 } });
         });
@@ -282,26 +285,26 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       else {
         const popResult1 = popStack(state);
         if (popResult1 == undefined)
-          return errorState(state, `stack underflow (1) during ->`);
+          throw new Step(`stack underflow (1) during ->`);
         const { elt: elt1, newState: ns1 } = popResult1;
         state = ns1;
 
         const popResult2 = popStack(state);
         if (popResult2 == undefined)
-          return errorState(state, `stack underflow (2) during ->`);
+          throw new Step(`stack underflow (2) during ->`);
         const { elt: elt2, newState: ns2 } = popResult2;
         state = ns2;
 
         if (!exprEqual(elt1.term, elt2.klass)) {
-          return errorState(state, `type mismatch`);
+          throw new Step(`type mismatch`);
         }
 
         if (state.meta.length == 0)
-          return errorState(state, `metacontext underflow during ->`);
+          throw new Step(`metacontext underflow during ->`);
 
         const oldSub = state.meta[state.meta.length - 1];
         if (oldSub.t != 'sub')
-          return errorState(state, `expected sub during ->`);
+          throw new Step(`expected sub during ->`);
 
         const newSub = produce(oldSub, c => {
           c.sub.push({ term: elt2.term, name: state.cframe.name, klass: elt1.term, range: { first: 0, last: 1 } });
@@ -327,12 +330,20 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
   }
 }
 
+
 export function stepForward(state: State): State | undefined {
   if (state.error)
     return undefined;
-  state = execInstruction(state, state.toks[state.cframe.pc], state.cframe.pc);
-  state = produce(state, s => { s.cframe.pc++; });
-  if (state.cframe.pc >= state.toks.length) return undefined;
+  try {
+    state = execInstruction(state, state.toks[state.cframe.pc], state.cframe.pc);
+    state = produce(state, s => { s.cframe.pc++; });
+    if (state.cframe.pc >= state.toks.length) return undefined;
+  }
+  catch (e) {
+    if (e instanceof Step) {
+      return errorState(state, e.msg);
+    }
+  }
   return state;
 }
 
