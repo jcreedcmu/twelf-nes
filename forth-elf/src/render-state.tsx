@@ -55,18 +55,9 @@ function exprToTex(e: Expr): string {
   }
 }
 
-function isTokenHilighted(state: State, sel: Selection, pc: number): boolean {
-  switch (sel.t) {
-    case 'sigItem': return in_range(pc, state.sig[sel.index].program);
-    case 'ctlItem': return state.ctl[sel.index].pc == pc;
-    case 'metaItem': {
-      const frame = state.meta[sel.index];
-      return frame.t == 'ctx' && frame.pc == pc;
-    }
-  }
-}
 
-function renderToks(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
+
+function renderToks(state: State, dispatch: Dispatch, currentPcSelection: number | undefined): JSX.Element {
   let i = 0;
   function findPc(pc: number): (e: React.MouseEvent) => void {
     return e => dispatch({ t: 'findPc', pc });
@@ -75,7 +66,7 @@ function renderToks(state: State, dispatch: Dispatch, currentSelection: Selectio
   for (const decl of state.origToks) {
     for (const tok of decl) {
       const className = ['token'];
-      if (currentSelection != undefined && isTokenHilighted(state, currentSelection, i)) {
+      if (currentPcSelection == i) {
         className.push('hilited');
       }
       if (state.ctl.find(cf => cf.pc == i)) className.push('latent');
@@ -116,14 +107,14 @@ function renderSig(sig: Sig, dispatch: Dispatch, currentSelection: Selection | u
   return <div className="sigcontainer">{str}</div>;
 }
 
-function renderStack(stack: Stack): JSX.Element {
+function renderStack(stack: Stack, dispatch: Dispatch, currentPcSelection: number | undefined): JSX.Element {
   const newline = "\n";
 
   function renderStackFrame(e: StackEntry) {
     switch (e.t) {
       case 'DataFrame': return <span><Tex expr={subToTex(e)} />{newline}</span>;
       case 'LabDataFrame': return <span><Tex expr={subToTex(e)} /> {e.name}
-        <PcToken onClick={() => { }} pc={e.pc} selected={false} />{newline}</span>;
+        <PcToken dispatch={dispatch} pc={e.pc} selection={currentPcSelection} />{newline}</span>;
     }
   }
   const str = stack.map(e => renderStackFrame(e));
@@ -146,7 +137,7 @@ function texOfCtx(meta: MetaCtxEntry): string {
   }
 }
 
-function renderMeta(meta: MetaCtx, currentSelection: Selection | undefined, dispatch: Dispatch): JSX.Element {
+function renderMeta(meta: MetaCtx, currentPcSelection: number | undefined, dispatch: Dispatch): JSX.Element {
   const newline = "\n";
 
   function renderMetaFrame(e: MetaCtxEntry, index: number): JSX.Element {
@@ -156,10 +147,10 @@ function renderMeta(meta: MetaCtx, currentSelection: Selection | undefined, disp
       case 'sub': return <span><Tex expr={lb + texOfCtx(e) + rb} />{newline}</span>;
       case 'ctx': {
         const onClick = () => {
-          dispatch({ t: 'setCurrentSel', sel: { t: 'metaItem', index } });
+          dispatch({ t: 'setCurrentPcSel', pc: e.pc });
         }
-        const selected = currentSelection != undefined && currentSelection.t == 'metaItem' && currentSelection.index == index;
-        const token = <PcToken onClick={onClick} selected={selected} pc={e.pc} />;
+        const selected = currentPcSelection == index;
+        const token = <PcToken dispatch={dispatch} selection={currentPcSelection} pc={e.pc} />;
         return <span><Tex expr={'(' + texOfCtx(e) + ')'} />{token}{newline}</span>;
       }
     }
@@ -173,21 +164,23 @@ function renderMeta(meta: MetaCtx, currentSelection: Selection | undefined, disp
 }
 
 type PcTokenProps = {
-  onClick: undefined | (() => void),
-  selected: boolean,
+  dispatch: Dispatch,
+  selection: number | undefined,
   pc: number,
 }
 
 function PcToken(props: PcTokenProps): JSX.Element {
-  const { onClick, pc, selected } = props;
+  const { dispatch, pc, selection } = props;
   const className: string[] = ["token"];
-  if (selected)
+  if (selection == pc)
     className.push('hilited');
-  const onMouseDown = onClick == undefined ? undefined : ((e: React.MouseEvent) => onClick());
+  const onMouseDown = (e: React.MouseEvent) => {
+    dispatch({ t: 'setCurrentPcSel', pc })
+  }
   return <div className={className.join(' ')} onMouseDown={onMouseDown} >{pc}</div>;
 }
 
-function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
+function renderCtlEntry(ctl: CtlEntry, currentPcSelection: number | undefined, dispatch: Dispatch, index?: number): JSX.Element {
   let name: (JSX.Element | string)[] = [''];
   if (ctl.readingName) {
     name = [`, name: `, <span style={{ color: 'red' }}>?</span>];
@@ -197,18 +190,16 @@ function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, 
   }
 
   const onMouseDown = index == undefined ? undefined : () => {
-    dispatch({ t: 'setCurrentSel', sel: { t: 'ctlItem', index } });
+    dispatch({ t: 'setCurrentPcSel', pc: ctl.pc });
   };
 
-  const selected = currentSelection != undefined && currentSelection.t == 'ctlItem' && index != undefined && currentSelection.index == index;
-
   return <span>
-    <PcToken onClick={onMouseDown} pc={ctl.pc} selected={selected} />
+    <PcToken dispatch={dispatch} pc={ctl.pc} selection={currentPcSelection} />
     [def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
 }
 
-function renderCtl(ctl: Ctl, currentSelection: Selection | undefined, dispatch: Dispatch): JSX.Element {
-  const str = ctl.map((ce, index) => renderCtlEntry(ce, currentSelection, dispatch, index));
+function renderCtl(ctl: Ctl, currentPcSelection: number | undefined, dispatch: Dispatch): JSX.Element {
+  const str = ctl.map((ce, index) => renderCtlEntry(ce, currentPcSelection, dispatch, index));
 
   return <div className="ctlcontainer">{str}</div>;
 }
@@ -235,7 +226,7 @@ function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
   return <div style={s}><div style={s1} >{x}</div><div style={s2} >{y}</div></div>;
 }
 
-export function showDupCurrentSelection(state: State, currentSelection: Selection | undefined): JSX.Element | undefined {
+export function showDupCurrentSelection(state: State, dispatch: Dispatch, currentSelection: Selection | undefined, currentPcSelection: number | undefined): JSX.Element | undefined {
   if (currentSelection == undefined)
     return undefined;
   switch (currentSelection.t) {
@@ -244,14 +235,13 @@ export function showDupCurrentSelection(state: State, currentSelection: Selectio
       const sigEntry = state.sig[currentSelection.index];
       return <div>
         {renderSigEntry(sigEntry)}<br />
-        <PcToken onClick={() => { }} pc={sigEntry.program.first} selected={false} />
+        <PcToken dispatch={dispatch} pc={sigEntry.program.first} selection={currentPcSelection} />
       </div>;
     }
-    case 'ctlItem': return undefined;
   }
 }
 
-export function renderState(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
+export function renderState(state: State, dispatch: Dispatch, currentSelection: Selection | undefined, currentPcSelection: number | undefined): JSX.Element {
   let stateRepn: JSX.Element[];
   const tdStyle: CSSProperties = {
     flexGrow: 1,
@@ -269,16 +259,16 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
     stateRepn =
       [
         <div style={tdStyle}>
-          <b>Ctl</b>:{renderCtl(state.ctl, currentSelection, dispatch)}<br />
+          <b>Ctl</b>:{renderCtl(state.ctl, currentPcSelection, dispatch)}<br />
         </div>,
         <div style={tdStyle}>
           <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
         </div>,
         <div style={tdStyle}>
-          <b>Stack</b>:{renderStack(state.stack)}
+          <b>Stack</b>:{renderStack(state.stack, dispatch, currentPcSelection)}
         </div>,
         <div style={tdStyle}>
-          <b>Meta</b>:{renderMeta(state.meta, currentSelection, dispatch)}<br />
+          <b>Meta</b>:{renderMeta(state.meta, currentPcSelection, dispatch)}<br />
         </div>,
       ];
 
@@ -290,11 +280,11 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
      * `; */
   }
 
-  const dupCurrentSelection = showDupCurrentSelection(state, currentSelection);
+  const dupCurrentSelection = showDupCurrentSelection(state, dispatch, currentSelection, currentPcSelection);
   return <div>
-    <b>Control</b>: {renderCtlEntry(state.cframe, currentSelection, dispatch)}<br />
+    <b>Control</b>: {renderCtlEntry(state.cframe, currentPcSelection, dispatch)}<br />
     {hsplit(
-      renderToks(state, dispatch, currentSelection),
+      renderToks(state, dispatch, currentPcSelection),
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
       0.20
     )}<br />

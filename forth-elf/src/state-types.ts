@@ -5,17 +5,17 @@ export type Action =
   | { t: 'changeStep', dframe: number, multi: boolean }
   | { t: 'findPc', pc: number }
   | { t: 'setCurrentSel', sel: Selection }
+  | { t: 'setCurrentPcSel', pc: number }
   ;
 
 export type Selection =
   | { t: 'sigItem', index: number }
-  | { t: 'ctlItem', index: number }
-  | { t: 'metaItem', index: number }
   ;
 
 export type AppState = {
   frame: number,
   currentSelection: Selection | undefined,
+  currentPcSelection: number | undefined,
   states: State[],
 }
 

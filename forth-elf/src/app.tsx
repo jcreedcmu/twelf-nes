@@ -84,10 +84,16 @@ function reduce_inner(state: AppState, action: Action): AppState {
         s.currentSelection = action.sel;
       });
     }
+    case 'setCurrentPcSel': {
+      return produce(state, s => {
+        s.currentPcSelection = action.pc;
+      });
+    }
     case 'setStep': {
       return produce(state, s => {
         s.frame = action.frame;
         s.currentSelection = undefined;
+        s.currentPcSelection = undefined;
       });
     }
   }
@@ -99,6 +105,7 @@ export function mkAppState(input: string): AppState {
     frame: 0,
     states,
     currentSelection: undefined,
+    currentPcSelection: undefined,
   }
 }
 
@@ -108,7 +115,7 @@ export function renderAppState(app: AppState, dispatch: Dispatch): JSX.Element {
       min={0} max={app.states.length - 1} style={{ width: '100%' }} value={app.frame}
       onInput={(e: React.FormEvent<HTMLInputElement>) => { dispatch({ t: 'setStep', frame: parseInt((e.target as HTMLInputElement).value) }) }} />
     <br />
-    {renderState(app.states[app.frame], dispatch, app.currentSelection)}</div>;
+    {renderState(app.states[app.frame], dispatch, app.currentSelection, app.currentPcSelection)}</div>;
 }
 
 function App(props: AppProps): JSX.Element {
