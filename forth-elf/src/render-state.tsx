@@ -138,29 +138,40 @@ function texOfCtx(meta: MetaCtxEntry): string {
   }
 }
 
-function renderMeta(meta: MetaCtx, currentPcSelection: number | undefined, dispatch: Dispatch): JSX.Element {
+type MetaButtonProps = {
+  dispatch: Dispatch;
+  index: number;
+}
+
+function MetaButton(props: MetaButtonProps): JSX.Element {
+  const { dispatch, index } = props;
+  return <button onMouseDown={(e) => {
+    dispatch({ t: 'setCurrentSel', sel: { t: 'metaItem', index } })
+  }}>?</button>;
+}
+
+function renderMetaFrame(e: MetaCtxEntry, dispatch: Dispatch, currentPcSelection: number | undefined, index: number): JSX.Element {
   const newline = "\n";
-
-  function renderMetaFrame(e: MetaCtxEntry, index: number): JSX.Element {
-    const lb = '\\{';
-    const rb = '\\}';
-    switch (e.t) {
-      case 'sub': return <span><Tex expr={lb + texOfCtx(e) + rb} />{newline}</span>;
-      case 'ctx': {
-        const onClick = () => {
-          dispatch({ t: 'setCurrentPcSel', pc: e.pc });
-        }
-        const selected = currentPcSelection == index;
-        const token = <PcToken dispatch={dispatch} selection={currentPcSelection} pc={e.pc} />;
-        return <span><Tex expr={'(' + texOfCtx(e) + ')'} />{token}{newline}</span>;
+  const lb = '\\{';
+  const rb = '\\}';
+  switch (e.t) {
+    case 'sub': return <span><MetaButton dispatch={dispatch} index={index} />
+      <Tex expr={lb + texOfCtx(e) + rb} />{newline}</span>;
+    case 'ctx': {
+      const onClick = () => {
+        dispatch({ t: 'setCurrentPcSel', pc: e.pc });
       }
+      const selected = currentPcSelection == index;
+      const token = <PcToken dispatch={dispatch} selection={currentPcSelection} pc={e.pc} />;
+      return <span>
+        <MetaButton dispatch={dispatch} index={index} />
+        <Tex expr={'(' + texOfCtx(e) + ')'} />{token}{newline}</span>;
     }
-
   }
+}
 
-  const str = meta.map((e, i) => renderMetaFrame(e, i));
-
-
+function renderMeta(meta: MetaCtx, currentPcSelection: number | undefined, dispatch: Dispatch): JSX.Element {
+  const str = meta.map((e, i) => renderMetaFrame(e, dispatch, currentPcSelection, i));
   return <pre>{str}</pre>;
 }
 
@@ -238,6 +249,13 @@ export function showDupCurrentSelection(state: State, dispatch: Dispatch, curren
         {renderSigEntry(sigEntry)}<br />
         <PcToken dispatch={dispatch} pc={sigEntry.pc} selection={currentPcSelection} />
       </div>;
+    }
+    case 'metaItem': {
+      const metaEntry = state.meta[currentSelection.index];
+      return <div>
+        {renderMetaFrame(metaEntry, dispatch, currentPcSelection, currentSelection.index)}<br />
+      </div>;
+
     }
   }
 }
