@@ -127,7 +127,7 @@ function callIdent(state: State, name: string): State {
   }
   return produce(state, s => {
     s.ctl.push(state.cframe);
-    s.cframe.pc = sigent.program.first - 1; // because we'll increment it later
+    s.cframe.pc = sigent.program.first;
     s.cframe.defining = false;
   });
 }
@@ -145,24 +145,45 @@ function doOpenParen(state: State) {
 }
 
 function doCloseParen(state: State, pc: number): State {
-  let stackEntry;
-  ({ elt: stackEntry, newState: state } = popStack(state));
-
-  if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind')
-    throw new Step(`expected classifier on stack during .`);
-
   let metaEntry;
   ({ elt: metaEntry, newState: state } = popMeta(state));
 
-  if (metaEntry.t != 'ctx')
-    throw new Step(`expected ctx during >`);
+  switch (metaEntry.t) {
+    case 'ctx': {
+      let stackEntry;
+      ({ elt: stackEntry, newState: state } = popStack(state));
 
-  const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry, state.cframe.name, metaEntry.pc);
+      if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind')
+        throw new Step(`expected classifier on stack during .`);
 
-  return produce(state, s => {
-    s.cframe.program.last = pc;
-    s.stack.push(newStackEntry);
-  });
+
+      const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry, state.cframe.name, metaEntry.pc);
+
+      return produce(state, s => {
+        s.cframe.program.last = pc;
+        s.stack.push(newStackEntry);
+      });
+    }
+    case 'sub': {
+      let cframe;
+      ({ elt: cframe, newState: state } = popCtl(state));
+
+      let sframe;
+      ({ elt: sframe, newState: state } = popStack(state));
+
+      // XXX assert sframe is type/kind?
+
+      const name = state.cframe.name;
+      if (name == undefined) {
+        throw new Step(`expected constant to be named during closeParen`);
+      }
+
+      return produce(state, s => {
+        s.cframe = cframe;
+        s.stack.push(formRoot(name, metaEntry.sub, sframe));
+      });
+    }
+  }
 }
 
 function execInstruction(state: State, inst: Tok, pc: number): State {
@@ -206,28 +227,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         return state;
       }
       else {
-        let cframe;
-        ({ elt: cframe, newState: state } = popCtl(state));
-
-        let sframe;
-        ({ elt: sframe, newState: state } = popStack(state));
-
-        let mframe;
-        ({ elt: mframe, newState: state } = popMeta(state));
-
-        const name = state.cframe.name;
-        if (name == undefined) {
-          throw new Step(`expected constant to be named during :`);
-        }
-
-        if (mframe.t != 'sub') {
-          throw new Step(`expected sub during .`);
-        }
-
-        return produce(state, s => {
-          s.cframe = cframe;
-          s.stack.push(formRoot(name, mframe.sub, sframe));
-        });
+        throw new Step(`we no longer expect to hit . in execution mode`);
       }
     }
 
