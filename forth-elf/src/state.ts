@@ -289,34 +289,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
     // These are now the same
     case '.': return doBind(state, pc);
     case '->': return doBind(state, pc);
-
-    case 'id': {
-      switch (inst.name) {
-        case 'o': // fallthrough intentional
-        case 'l': // fallthrough intentional
-        case 's': // fallthrough intentional
-        case 'b': // fallthrough intentional
-        case 'a': // fallthrough intentional
-        case 'm': // fallthrough intentional
-        case 'x': // fallthrough intentional
-        case 'k':
-          return callIdent(state, inst.name);
-
-        case 'y':
-          return produce(state, s => {
-            s.stack.push({
-              t: 'DataFrame',
-              term: { t: 'appv', head: inst.name, spine: [] },
-              klass: { t: 'appc', cid: 'o', spine: [] },
-            });
-          });
-
-        default: throw new Step(`unimplemented identifier ${inst.name}`);
-      }
-    }
-
-
-
+    case 'id': return callIdent(state, inst.name);
     case '(': return doOpenParen(state);
     case ')': return doCloseParen(state, pc);
 

@@ -28,7 +28,7 @@ EOF
 `.replace(/\\\n/g, '');
 
 function go() {
-  init({ input: simple_test });
+  init({ input: sub_test });
 }
 
 go();
