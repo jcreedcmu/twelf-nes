@@ -168,16 +168,18 @@ function renderMeta(meta: MetaCtx, currentSelection: Selection | undefined, disp
 }
 
 type PcTokenProps = {
-  onClick: () => void,
+  onClick: undefined | (() => void),
   selected: boolean,
   pc: number,
 }
 
 function PcToken(props: PcTokenProps): JSX.Element {
+  const { onClick, pc, selected } = props;
   const className: string[] = ["token"];
-  if (props.selected)
+  if (selected)
     className.push('hilited');
-  return <div className={className.join(' ')} onMouseDown={e => props.onClick()} >{props.pc}</div>;
+  const onMouseDown = onClick == undefined ? undefined : ((e: React.MouseEvent) => onClick());
+  return <div className={className.join(' ')} onMouseDown={onMouseDown} >{pc}</div>;
 }
 
 function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
@@ -188,16 +190,16 @@ function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, 
   else if (ctl.name != undefined) {
     name = [`, name: ${ctl.name}`];
   }
-  const onMouseDown = index == undefined ? undefined : (e: React.MouseEvent) => {
+
+  const onMouseDown = index == undefined ? undefined : () => {
     dispatch({ t: 'setCurrentSel', sel: { t: 'ctlItem', index } });
   };
-  const className: string[] = ["ctlbutton"];
-  if (currentSelection != undefined && currentSelection.t == 'ctlItem' && index != undefined && currentSelection.index == index) {
-    className.push('hilited');
-  }
-  return <span><div className={className.join(' ')} onMouseDown={onMouseDown}>
-    {ctl.pc}
-  </div>[def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
+
+  const selected = currentSelection != undefined && currentSelection.t == 'ctlItem' && index != undefined && currentSelection.index == index;
+
+  return <span>
+    <PcToken onClick={onMouseDown} pc={ctl.pc} selected={selected} />
+    [def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
 }
 
 function renderCtl(ctl: Ctl, currentSelection: Selection | undefined, dispatch: Dispatch): JSX.Element {

@@ -51,18 +51,6 @@
   align-items: flex-start;
 }
 
-
-.ctlbutton {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  margin: 4px;
-  padding: 4px 8px;
-  font-family: monospace;
-  display: inline-block;
-  cursor: pointer;
-  user-select: none;
-}
-
 .ctlcontainer {
   display: flex;
   flex-direction: column;
