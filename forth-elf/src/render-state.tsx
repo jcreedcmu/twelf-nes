@@ -141,7 +141,7 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   const newline = "\n";
 
   const str = meta.map(e => {
-    return <span><Tex expr={'(' + texOfCtx(e) + ')'} />{newline}</span>;
+    return <span><Tex expr={e.t + '(' + texOfCtx(e) + ')'} />{newline}</span>;
   });
 
   return <pre>{str}</pre>;
