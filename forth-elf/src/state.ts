@@ -1,5 +1,5 @@
 import { produce } from 'immer';
-import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks, SigEntry } from './state-types';
+import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks, SigEntry, LabDataFrameStackEntry } from './state-types';
 import { Rng } from "./range";
 import { tokenToString } from 'typescript';
 import { stringOfTok } from './render-state';
@@ -55,12 +55,23 @@ function popMeta(state: State): { elt: MetaCtxEntry, newState: State } {
   return { elt, newState };
 }
 
-function formPi(ctx: Ctx, base: StackEntry, name: string | undefined, pc: number): StackEntry {
+function formPi(ctx: Ctx, base: StackEntry, name: string | undefined, pc: number): LabDataFrameStackEntry {
   let term = base.term;
   for (let i = ctx.length - 1; i >= 0; i--) {
     term = { t: 'pi', name: ctx[i].name, a: ctx[i].klass, b: term };
   }
   return { t: 'LabDataFrame', term, klass: base.klass, name, pc };
+}
+
+
+function formLambda(ctx: Ctx, base: StackEntry, name: string | undefined, pc: number): StackEntry {
+  let term = base.term;
+  let klass = base.klass;
+  for (let i = ctx.length - 1; i >= 0; i--) {
+    term = { t: 'lam', name: ctx[i].name, a: ctx[i].klass, m: term };
+    klass = { t: 'pi', name: ctx[i].name, a: ctx[i].klass, b: klass };
+  }
+  return { t: 'LabDataFrame', term, klass, name, pc };
 }
 
 function formRoot(name: string, sub: Sub, base: StackEntry): StackEntry {
@@ -71,12 +82,13 @@ function formRoot(name: string, sub: Sub, base: StackEntry): StackEntry {
   };
 }
 
-// XXX Probably should just do legitimate equality checking
+// XXX neither sound nor complete, for alpha variance reasons
 function flatten(e: Expr): string[] {
   switch (e.t) {
     case 'type': return ['type'];
     case 'kind': return ['kind'];
-    case 'pi': throw new Error(`Didn't expect to flatten anything but base types!`);
+    case 'pi': return ['pi', '_', ':', ...flatten(e.a), '.', ...flatten(e.b)];
+    case 'lam': return ['lam', '_', ':', ...flatten(e.a), '.', ...flatten(e.m)];
     case 'appc': {
       const spine: string[] = e.spine.map(x => flatten(x)).reverse().flatMap(x => x);
       return [...spine, e.cid];
@@ -171,6 +183,62 @@ function callIdent(state: State, name: string): State {
       return produce(state, s => {
         s.stack.push({ t: 'DataFrame', klass: result.klass, term: result.term })
       });
+  }
+}
+
+function doOpenBracket(state: State): State {
+  const gamma: MetaCtxEntry = {
+    t: 'ctx',
+    ctx: [],
+    pc: state.cframe.pc,
+  };
+
+  return produce(state, s => {
+    s.meta.push(gamma);
+  });
+}
+
+function doCloseBracket(state: State): State {
+  const pc = state.cframe.pc;
+  let metaEntry;
+  ({ elt: metaEntry, newState: state } = popMeta(state));
+
+  switch (metaEntry.t) {
+    case 'ctx': {
+      let stackEntry;
+      ({ elt: stackEntry, newState: state } = popStack(state));
+      // stackEntry is now body of lambda
+
+      const newStackEntry: StackEntry = formLambda(metaEntry.ctx, stackEntry, state.cframe.name, metaEntry.pc);
+
+      return produce(state, s => {
+        s.cframe.name = undefined;
+        s.stack.push(newStackEntry);
+      });
+    }
+    case 'sub': {
+
+      throw new Step(`lambda execution not ready yet`);
+
+      // let cframe;
+      // ({ elt: cframe, newState: state } = popCtl(state));
+
+      // let sframe;
+      // ({ elt: sframe, newState: state } = popStack(state));
+
+      // // XXX assert sframe is type/kind?
+
+      // const name = state.cframe.name;
+      // if (name == undefined) {
+      //   throw new Step(`expected constant to be named during closeParen`);
+      // }
+
+      // return produce(state, s => {
+      //   s.cframe.name = undefined;
+      //   s.cframe = cframe;
+      //   s.stack.push(formRoot(name, metaEntry.sub, sframe));
+      // });
+    }
   }
 }
 
@@ -325,6 +393,9 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
     case '(': return doOpenParen(state);
     case ')': return doCloseParen(state, pc);
 
+    case '[': return doOpenBracket(state);
+    case ']': return doCloseBracket(state);
+
     case ':': {
       return produce(state, s => {
         s.cframe.readingName = true;
@@ -333,7 +404,6 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
     case 'EOF': {
       throw new Step(`halt`);
     }
-    default: throw new Step(`unimplemented instruction ${inst.t}`);
   }
 }
 

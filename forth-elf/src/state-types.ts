@@ -30,6 +30,7 @@ export type Expr =
   | { t: 'type' }
   | { t: 'kind' }
   | { t: 'pi', name: string | undefined, a: Expr, b: Expr }
+  | { t: 'lam', name: string | undefined, a: Expr, m: Expr }
   | { t: 'appc', cid: string, spine: Expr[] }
   | { t: 'appv', head: string, spine: Expr[] }
 
@@ -83,10 +84,17 @@ export type CtlEntry = {
   readingName: boolean,
 };
 
+export type LabDataFrameStackEntry = {
+  t: 'LabDataFrame',
+  name: string | undefined,
+  pc: number,
+  term: Expr,
+  klass: Expr
+};
 
 export type StackEntry =
   | { t: 'DataFrame', term: Expr, klass: Expr }
-  | { t: 'LabDataFrame', name: string | undefined, pc: number, term: Expr, klass: Expr }
+  | LabDataFrameStackEntry
   ;
 
 export type Sig = SigEntry[];

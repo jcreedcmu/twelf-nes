@@ -20,13 +20,6 @@ export function stringOfTok(tok: Tok): string {
   }
 }
 
-function appToSpine(head: string, spine: Expr[]): string {
-  if (spine.length == 0)
-    return head;
-  else
-    return `${head}·(${spine.map(exprToString).join(",")})`;
-}
-
 function appToSpineTex(head: string, spine: Expr[]): string {
   if (spine.length == 0)
     return head;
@@ -34,23 +27,14 @@ function appToSpineTex(head: string, spine: Expr[]): string {
     return `${head}\\cdot(${spine.map(exprToTex).join(",")})`;
 }
 
-function exprToString(e: Expr): string {
-  switch (e.t) {
-    case 'type': return 'Type';
-    case 'kind': return 'Kind';
-    case 'pi': return e.name == undefined ? `(${exprToString(e.a)} -> ${exprToString(e.b)})`
-      : `{${e.name}:${exprToString(e.a)}} ${exprToString(e.b)}`;
-    case 'appc': return appToSpine(e.cid, e.spine);
-    case 'appv': return appToSpine(e.head, e.spine);
-  }
-}
-
 function exprToTex(e: Expr): string {
+  const blank = '\\_';
   switch (e.t) {
     case 'type': return '\\mathsf{type}';
     case 'kind': return '\\mathsf{kind}';
     case 'pi': return e.name == undefined ? `(${exprToTex(e.a)} \\to ${exprToTex(e.b)})`
       : `\\left( \\prod_{ ${e.name} {:} ${exprToTex(e.a)}}  ${exprToTex(e.b)} \\right)`;
+    case 'lam': return `(\\lambda ${e.name ?? blank} : ${exprToTex(e.a)} . ${exprToTex(e.m)})`;
     case 'appc': return appToSpineTex(e.cid, e.spine);
     case 'appv': return appToSpineTex(e.head, e.spine);
   }
@@ -84,11 +68,11 @@ function renderToks(state: State, dispatch: Dispatch, currentPcSelection: number
 }
 
 function declToTex(decl: { name: string, klass: Expr }): string {
-  return `${decl.name} : ${exprToTex(decl.klass)}`;
+  return `${decl.name} : ${exprToTex(decl.klass)} `;
 }
 
 function subToTex(decl: { term: Expr, klass: Expr }): string {
-  return `${exprToTex(decl.term)} : ${exprToTex(decl.klass)}`;
+  return `${exprToTex(decl.term)} : ${exprToTex(decl.klass)} `;
 }
 
 function renderSigEntry(sigent: SigEntry): JSX.Element {
@@ -124,7 +108,7 @@ function renderStack(stack: Stack, dispatch: Dispatch, currentPcSelection: numbe
 }
 
 function texOfSubEntry(e: SubEntry): string {
-  return `[${exprToTex(e.term)}/${e.name ?? '\\_'}]:${exprToTex(e.klass)}`;
+  return `[${exprToTex(e.term)} /${e.name ?? '\\_'}]:${exprToTex(e.klass)}`;
 }
 
 function texOfCtxEntry(e: CtxEntry): string {
