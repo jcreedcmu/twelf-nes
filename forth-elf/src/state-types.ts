@@ -81,10 +81,8 @@ export type CtlEntry = {
 };
 
 
-export type StackEntry = {
-  term: Expr,
-  klass: Expr
-};
+export type StackEntry =
+  | { t: 'DataFrame', term: Expr, klass: Expr };
 
 export type Sig = SigEntry[];
 export type Ctx = CtxEntry[];
