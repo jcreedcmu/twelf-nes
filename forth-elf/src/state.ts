@@ -181,26 +181,28 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 
     case '.': {
       if (state.cframe.defining) {
-        state = doCloseParen(state, pc);
+
 
         let elt;
         ({ elt, newState: state } = popStack(state));
 
-        if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
+        if (elt.t != 'LabDataFrame')
+          throw new Step(`expected labelled data frame on stack during .`);
+
+        if (elt.klass.t != 'type' && elt.klass.t != 'kind')
           throw new Step(`expected classifier on stack during .`);
-        }
 
         const emptyProgram: Tok[] = [];
         state = produce(state, s => {
           s.sig.push({
-            name: state.cframe.name ?? '_',
+            name: elt.name ?? '_',
             klass: elt.term,
-            program: state.cframe.program,
+            program: { first: elt.pc, last: -1 },
           });
           s.cframe.program = { first: pc + 1, last: pc };
           s.cframe.name = undefined;
         });
-        state = doOpenParen(state);
+
         return state;
       }
       else {

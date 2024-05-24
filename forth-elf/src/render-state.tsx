@@ -239,7 +239,14 @@ export function showDupCurrentSelection(state: State, currentSelection: Selectio
   if (currentSelection == undefined)
     return undefined;
   switch (currentSelection.t) {
-    case 'sigItem': return renderSigEntry(state.sig[currentSelection.index]);
+
+    case 'sigItem': {
+      const sigEntry = state.sig[currentSelection.index];
+      return <div>
+        {renderSigEntry(sigEntry)}<br />
+        <PcToken onClick={() => { }} pc={sigEntry.program.first} selected={false} />
+      </div>;
+    }
     case 'ctlItem': return undefined;
   }
 }
