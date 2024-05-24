@@ -7,7 +7,6 @@ import { produce } from 'immer';
 import { useEffect } from 'react';
 import { renderState } from './render-state';
 import { Action, AppState, Dispatch, Effect } from './state-types';
-import { pcEqual } from './program-counter';
 
 type AppProps = {
   input: string,
@@ -69,7 +68,7 @@ function reduce_inner(state: AppState, action: Action): AppState {
       }
     }
     case 'findPc': {
-      const newFrame = state.states.findIndex(state => pcEqual(state.cframe.pc, { t: 'tokstream', index: action.pc }));
+      const newFrame = state.states.findIndex(state => state.cframe.pc == action.pc);
       if (newFrame != -1) {
         return produce(state, s => {
           s.frame = newFrame;

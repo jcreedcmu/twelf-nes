@@ -1,9 +1,5 @@
-import { Pc } from './state-types';
+export type Rng = { first: number; last: number; };
 
-export type Rng = { first: Pc; last: Pc; };
-
-export function in_range(pc: Pc, range: Rng) {
-  if (pc.t != 'tokstream' || range.first.t != 'tokstream' || range.last.t != 'tokstream')
-    return false;
-  return pc.index >= range.first.index && pc.index <= range.last.index;
+export function in_range(index: number, range: Rng) {
+  return index >= range.first && index <= range.last;
 }

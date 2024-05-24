@@ -51,12 +51,6 @@
   align-items: flex-start;
 }
 
-.stackcontainer {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
 
 .ctlbutton {
   border: 1px solid #ccc;
@@ -100,15 +94,4 @@ input[type="range"]::-moz-range-progress {
   background-color: #ffdd00;
   height: 10px;
   border-radius: 15px;
-}
-
-.codeblock {
-  font-family: monospace;
-  color: #444;
-  border: 1px solid #777;
-  background-color: #ddd;
-  display: inline-block;
-  padding: 0.2em 0.6em;
-  margin: 0.5em 0em;
-  border-radius: 0.5em;
 }

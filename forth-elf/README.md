@@ -136,14 +136,3 @@ and `]` effects the λR rule.
   a : x [ b : y [ y x k ] ]
 ```
 would be λ(x:a)λ(y:b).k x y.
-
-Thoughts After Playing With Time-Travel Debugger
-================================================
-
-- I have merged the Control stack with Data Stack
-- Maybe I can merge Context/substitution ("Meta") stack with Data Stack
-- Maybe it's better for now to think of programs as living distinctly
-  from original token stream. It seems to spend more memory, and risk
-  more allocation, but maybe conceptually it's better to think about
-  it that way, and then optimize later.
-- I should add a test for shadowing of variables

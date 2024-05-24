@@ -1,10 +1,5 @@
 import { Rng } from "./range";
 
-export type Pc =
-  | { t: 'tokstream', index: number }
-  | { t: 'sigEntry', sigIx: number, tokIx: number }
-  ;
-
 export type Action =
   | { t: 'setStep', frame: number }
   | { t: 'changeStep', dframe: number, multi: boolean }
@@ -33,7 +28,6 @@ export type Expr =
   | { t: 'type' }
   | { t: 'kind' }
   | { t: 'pi', name: string | undefined, a: Expr, b: Expr }
-  | { t: 'lam', name: string | undefined, a: Expr, m: Expr }
   | { t: 'appc', cid: string, spine: Expr[] }
   | { t: 'appv', head: string, spine: Expr[] }
 
@@ -41,15 +35,12 @@ export type Expr =
 export type Tok =
   | { t: 'type' }
   | { t: '->' }
-  | { t: 'grab' }
   | { t: ':' }
   | { t: '(' }
   | { t: ')' }
   | { t: '[' }
   | { t: ']' }
   | { t: '.' }
-  | { t: ';' }
-  | { t: 'ret' }
   | { t: 'id', name: string }
   ;
 
@@ -59,8 +50,6 @@ export type SigEntry = {
   name: string,
   klass: Expr,
   program: Rng,
-  code: Tok[],
-  metaCode: Tok[],
 };
 
 export type CtxEntry = {
@@ -78,35 +67,29 @@ export type SubEntry = {
 
 
 export type MetaCtxEntry =
-  | { t: 'sub', sub: Sub, code: Tok[] }
-  | { t: 'ctx', ctx: Ctx, code: Tok[] }
+  | { t: 'sub', sub: Sub }
+  | { t: 'ctx', ctx: Ctx }
   ;
 
 export type CtlEntry = {
-  pc: Pc
+  pc: number
   program: Rng,
-  code: Tok[],
-  codeDepth: number,
+  defining: boolean,
   name: string | undefined,
   readingName: boolean,
 };
 
 
-export type DataStackEntry = {
-  t: 'data',
+export type StackEntry = {
   term: Expr,
-  klass: Expr,
-  code: Tok[],
+  klass: Expr
 };
-
-export type StackEntry =
-  | DataStackEntry
-  | { t: 'control', cframe: CtlEntry };
 
 export type Sig = SigEntry[];
 export type Ctx = CtxEntry[];
 export type Sub = SubEntry[];
 export type MetaCtx = MetaCtxEntry[];
+export type Ctl = CtlEntry[];
 export type Stack = StackEntry[];
 export type Toks = Tok[];
 
@@ -115,6 +98,7 @@ export type State = {
   sig: Sig,
   ctx: Ctx,
   meta: MetaCtx,
+  ctl: Ctl,
   stack: Stack,
   toks: Toks,
   origToks: Toks[], // organized by decl, useful for debugging

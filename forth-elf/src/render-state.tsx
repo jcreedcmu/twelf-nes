@@ -1,45 +1,29 @@
-import { CSSProperties } from "react";
+import { tokenToString } from "typescript";
+import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, SigEntry, Stack, State, SubEntry, Tok } from "./state-types";
+import { Dispatch } from "./state-types";
 import Tex from './katex';
-import { isExactTok, pcEqual } from "./program-counter";
-import { in_range } from "./range";
-import { CtlEntry, CtxEntry, Dispatch, Expr, MetaCtx, MetaCtxEntry, Pc, Selection, Sig, SigEntry, Stack, StackEntry, State, SubEntry, Tok } from "./state-types";
+import { CSSProperties } from "react";
+import { Rng, in_range } from "./range";
 
 export function stringOfTok(tok: Tok): string {
   switch (tok.t) {
     case 'type': return '*';
     case '->': return '→';
-    case 'grab': return '▷';
-    case 'ret': return '⤶';
     case '.': return '.';
-    case 'id': {
-      if (tok.name == 'ell')
-        return 'ℓ';
-      else
-        return tok.name;
-    }
+    case 'id': return tok.name;
     case ':': return ':';
     case '(': return '(';
     case ')': return ')';
     case '[': return '[';
     case ']': return ']';
-    case ';': return ';';
   }
 }
 
-export function rawTok(tok: Tok): string {
-  switch (tok.t) {
-    case 'id':
-      return tok.name;
-    default:
-      return tok.t;
-  }
-}
-
-export function texOfName(name: string): string {
-  if (name == 'ell')
-    return '\\ell';
+function appToSpine(head: string, spine: Expr[]): string {
+  if (spine.length == 0)
+    return head;
   else
-    return name;
+    return `${head}·(${spine.map(exprToString).join(",")})`;
 }
 
 function appToSpineTex(head: string, spine: Expr[]): string {
@@ -49,47 +33,36 @@ function appToSpineTex(head: string, spine: Expr[]): string {
     return `${head}\\cdot(${spine.map(exprToTex).join(",")})`;
 }
 
+function exprToString(e: Expr): string {
+  switch (e.t) {
+    case 'type': return 'Type';
+    case 'kind': return 'Kind';
+    case 'pi': return e.name == undefined ? `(${exprToString(e.a)} -> ${exprToString(e.b)})`
+      : `{${e.name}:${exprToString(e.a)}} ${exprToString(e.b)}`;
+    case 'appc': return appToSpine(e.cid, e.spine);
+    case 'appv': return appToSpine(e.head, e.spine);
+  }
+}
+
 function exprToTex(e: Expr): string {
   switch (e.t) {
     case 'type': return '\\mathsf{type}';
     case 'kind': return '\\mathsf{kind}';
-    case 'pi': return e.name == undefined ? `(${exprToTex(e.a)}) \\to ${exprToTex(e.b)}`
+    case 'pi': return e.name == undefined ? `(${exprToTex(e.a)} \\to ${exprToTex(e.b)})`
       : `\\left( \\prod_{ ${e.name} {:} ${exprToTex(e.a)}}  ${exprToTex(e.b)} \\right)`;
-    case 'lam': return ` \\lambda ( ${e.name ?? '_'} {:} ${exprToTex(e.a)}).  ${exprToTex(e.m)} `;
-    case 'appc': return appToSpineTex(texOfName(e.cid), e.spine);
-    case 'appv': return appToSpineTex(texOfName(e.head), e.spine);
+    case 'appc': return appToSpineTex(e.cid, e.spine);
+    case 'appv': return appToSpineTex(e.head, e.spine);
   }
 }
 
-function isTokenHilighted(state: State, sel: Selection, pc: Pc): boolean {
+function isTokenHilighted(state: State, sel: Selection, pc: number): boolean {
   switch (sel.t) {
     case 'sigItem': return in_range(pc, state.sig[sel.index].program);
-    case 'ctlItem': return false; // pcEqual(state.ctl[sel.index].pc, pc); // XXX?
+    case 'ctlItem': return state.ctl[sel.index].pc == pc;
   }
 }
 
-function renderToksForPc(pc: Pc, state: State, dispatch: Dispatch, currentSelection: Selection | undefined, active: boolean): JSX.Element {
-  switch (pc.t) {
-    case 'tokstream': return renderToks(pc.index, state, dispatch, currentSelection, active);
-    case 'sigEntry': return renderToksForSigEntry(pc.tokIx, state.sig[pc.sigIx], state, dispatch, currentSelection, active);
-  }
-}
-
-function renderToksForSigEntry(offset: number, se: SigEntry, state: State, dispatch: Dispatch, currentSelection: Selection | undefined, active: boolean): JSX.Element {
-  let i = 0;
-  const row: JSX.Element[] = [];
-  for (const tok of se.code) {
-    const className = ['token'];
-    if (offset == i) className.push(active ? 'active' : 'latent');
-    const str = stringOfTok(tok);
-    const elt = <div className={className.join(' ')}>{str}</div>;
-    row.push(elt);
-    i++;
-  }
-  return <div>{row}</div>;
-}
-
-function renderToks(offset: number, state: State, dispatch: Dispatch, currentSelection: Selection | undefined, active: boolean): JSX.Element {
+function renderToks(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
   let i = 0;
   function findPc(pc: number): (e: React.MouseEvent) => void {
     return e => dispatch({ t: 'findPc', pc });
@@ -98,12 +71,12 @@ function renderToks(offset: number, state: State, dispatch: Dispatch, currentSel
   for (const decl of state.origToks) {
     for (const tok of decl) {
       const className = ['token'];
-      if (currentSelection != undefined && isTokenHilighted(state, currentSelection, { t: 'tokstream', index: i })) {
+      if (currentSelection != undefined && isTokenHilighted(state, currentSelection, i)) {
         className.push('hilited');
       }
-      if (state.stack.find(sf => sf.t == 'control' && isExactTok(sf.cframe.pc, i))) className.push('latent');
+      if (state.ctl.find(cf => cf.pc == i)) className.push('latent');
 
-      if (offset == i) className.push(active ? 'active' : 'latent');
+      if (i == state.cframe.pc) className.push('active');
       const str = stringOfTok(tok);
       const elt = <div className={className.join(' ')} onMouseDown={findPc(i)}>{str}</div>;
       row.push(elt);
@@ -115,7 +88,7 @@ function renderToks(offset: number, state: State, dispatch: Dispatch, currentSel
 }
 
 function declToTex(decl: { name: string, klass: Expr }): string {
-  return `${texOfName(decl.name)} : ${exprToTex(decl.klass)}`;
+  return `${decl.name} : ${exprToTex(decl.klass)}`;
 }
 
 function subToTex(decl: { term: Expr, klass: Expr }): string {
@@ -139,21 +112,14 @@ function renderSig(sig: Sig, dispatch: Dispatch, currentSelection: Selection | u
   return <div className="sigcontainer">{str}</div>;
 }
 
-function renderStackFrame(state: State, frame: StackEntry): JSX.Element {
-  switch (frame.t) {
-    case 'data':
-      return <span><Tex expr={subToTex(frame)} />{renderCode(frame.code)}</span>;
-    case 'control':
-      return renderCtlEntry(state, frame.cframe, undefined, (e) => { }); // XXX these can't be clicked on
-  }
-}
-
-function renderStack(state: State, stack: Stack): JSX.Element {
+function renderStack(stack: Stack): JSX.Element {
   const newline = "\n";
 
-  const str = stack.map(x => renderStackFrame(state, x));
+  const str = stack.map(e => {
+    return <span><Tex expr={subToTex(e)} />{newline}</span>;
+  });
 
-  return <div className="stackcontainer">{str}</div>;
+  return <pre>{str}</pre>;
 }
 
 function texOfSubEntry(e: SubEntry): string {
@@ -175,22 +141,14 @@ function renderMeta(meta: MetaCtx): JSX.Element {
   const newline = "\n";
 
   const str = meta.map(e => {
-    return <span><Tex expr={e.t + '(' + texOfCtx(e) + ')'} />{renderCode(e.code)}{newline}</span>;
+    return <span><Tex expr={'(' + texOfCtx(e) + ')'} />{newline}</span>;
   });
 
   return <pre>{str}</pre>;
 }
 
-function renderPc(state: State, pc: Pc): string {
-  switch (pc.t) {
-    case 'tokstream': return `${pc.index}`;
-    case 'sigEntry': return `${state.sig[pc.sigIx].name}:${pc.tokIx}`;
-  }
-}
-
-function renderCtlEntry(state: State, ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
+function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
   let name: (JSX.Element | string)[] = [''];
-  const code = renderCode(ctl.code);
   if (ctl.readingName) {
     name = [`, name: `, <span style={{ color: 'red' }}>?</span>];
   }
@@ -205,8 +163,14 @@ function renderCtlEntry(state: State, ctl: CtlEntry, currentSelection: Selection
     className.push('hilited');
   }
   return <span><div className={className.join(' ')} onMouseDown={onMouseDown}>
-    {renderPc(state, ctl.pc)}
-  </div>[{code}{name}]</span>;
+    {ctl.pc}
+  </div>[def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
+}
+
+function renderCtl(ctl: Ctl, currentSelection: Selection | undefined, dispatch: Dispatch): JSX.Element {
+  const str = ctl.map((ce, index) => renderCtlEntry(ce, currentSelection, dispatch, index));
+
+  return <div className="ctlcontainer">{str}</div>;
 }
 
 type Lerp = JSX.Element | JSX.Element[];
@@ -231,21 +195,11 @@ function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
   return <div style={s}><div style={s1} >{x}</div><div style={s2} >{y}</div></div>;
 }
 
-function renderCode(code: Tok[]): JSX.Element {
-  return <div className="codeblock">{code.length > 0 ? code.map(stringOfTok).join(' ') : '\u00a0'}</div>;
-}
-
 export function showDupCurrentSelection(state: State, currentSelection: Selection | undefined): JSX.Element | undefined {
   if (currentSelection == undefined)
     return undefined;
   switch (currentSelection.t) {
-    case 'sigItem': {
-      const sigEntry = state.sig[currentSelection.index];
-      return <div>{renderSigEntry(sigEntry)}<br />
-        {renderCode(sigEntry.code)}<br />
-        {renderCode(sigEntry.metaCode)}<br />
-      </div>;
-    }
+    case 'sigItem': return renderSigEntry(state.sig[currentSelection.index]);
     case 'ctlItem': return undefined;
   }
 }
@@ -268,35 +222,32 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
     stateRepn =
       [
         <div style={tdStyle}>
+          <b>Ctl</b>:{renderCtl(state.ctl, currentSelection, dispatch)}<br />
+        </div>,
+        <div style={tdStyle}>
           <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
         </div>,
         <div style={tdStyle}>
-          <b>Stack</b>:{renderStack(state, state.stack)}
+          <b>Stack</b>:{renderStack(state.stack)}
         </div>,
         <div style={tdStyle}>
           <b>Meta</b>:{renderMeta(state.meta)}<br />
         </div>,
       ];
-  }
 
-  function renderAllCode(state: State, dispatch: Dispatch, currentSelection: Selection | undefined): JSX.Element {
-    const pieces: JSX.Element[] = [];
-    for (const sf of state.stack) {
-      if (sf.t == 'control') {
-        pieces.push(renderToksForPc(sf.cframe.pc, state, dispatch, currentSelection, false));
-        pieces.push(<div style={{ width: '100%', height: 1, margin: '1em 0em', backgroundColor: 'gray' }} />);
-      }
-    }
-    pieces.push(renderToksForPc(state.cframe.pc, state, dispatch, currentSelection, true));
-
-    return <div style={{ display: 'flex', flexDirection: 'column' }}>{pieces}</div>;
+    /* ${stringOfSig(state.sig)}
+     *       {white - fg} stack: {
+     * /} ${stringOfStack(state.stack)}
+     * { white - fg} meta: {
+     * /} ${stringOfMeta(state.meta)}
+     * `; */
   }
 
   const dupCurrentSelection = showDupCurrentSelection(state, currentSelection);
   return <div>
-    <b>Control</b>: {renderCtlEntry(state, state.cframe, currentSelection, dispatch)}<br />
+    <b>Control</b>: {renderCtlEntry(state.cframe, currentSelection, dispatch)}<br />
     {hsplit(
-      renderAllCode(state, dispatch, currentSelection),
+      renderToks(state, dispatch, currentSelection),
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
       0.20
     )}<br />
