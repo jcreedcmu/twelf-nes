@@ -27,8 +27,19 @@ const sub_test = `
 EOF
 `.replace(/\\\n/g, '');
 
+const beta_test = `
+( type : o ) .
+( o : k ) .
+( o : k2 ) .
+( ( o ) -> type : a ) .
+( ( o : x ) -> x a : m ) .
+( ( o ) -> ( o ) -> o : b ) .
+( ( ( o ) -> o : f ) -> ( o : x ) -> ( x f f a ) -> type : c ) .
+( k2 k2 k b b m k [ ( o : t ) -> k2 t b ] c : d ) .
+EOF
+`
 function go() {
-  init({ input: sub_test });
+  init({ input: beta_test });
 }
 
 go();
