@@ -26,9 +26,9 @@ export function mkState(toks: Tok[][]): State {
   }
 }
 
-function popStack(state: State): undefined | { elt: StackEntry, newState: State } {
+function popStack(state: State): { elt: StackEntry, newState: State } {
   if (state.stack.length == 0)
-    return undefined;
+    throw new Step(`stack underflow`);
   const elt = state.stack.at(-1)!;
   const newState = produce(state, s => {
     s.stack.pop();
@@ -36,9 +36,9 @@ function popStack(state: State): undefined | { elt: StackEntry, newState: State 
   return { elt, newState };
 }
 
-function popCtl(state: State): undefined | { elt: CtlEntry, newState: State } {
+function popCtl(state: State): { elt: CtlEntry, newState: State } {
   if (state.ctl.length == 0)
-    return undefined;
+    throw new Step(`ctl underflow`);
   const elt = state.ctl.at(-1)!;
   const newState = produce(state, s => {
     s.ctl.pop();
@@ -46,9 +46,9 @@ function popCtl(state: State): undefined | { elt: CtlEntry, newState: State } {
   return { elt, newState };
 }
 
-function popMeta(state: State): undefined | { elt: MetaCtxEntry, newState: State } {
+function popMeta(state: State): { elt: MetaCtxEntry, newState: State } {
   if (state.meta.length == 0)
-    return undefined;
+    throw new Step(`metacontext underflow`);
   const elt = state.meta.at(-1)!;
   const newState = produce(state, s => {
     s.meta.pop();
@@ -136,26 +136,21 @@ function doOpenParen(state: State) {
 }
 
 function doCloseParen(state: State, pc: number): State {
-  const pr1 = popStack(state);
-  if (pr1 == undefined)
-    throw new Step(`stack underflow during )`);
-  const { elt: stackEntry, newState: state1 } = pr1;
+  let stackEntry;
+  ({ elt: stackEntry, newState: state } = popStack(state));
 
-  if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind') {
+  if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind')
     throw new Step(`expected classifier on stack during .`);
-  }
 
-  const pr2 = popMeta(state1);
-  if (pr2 == undefined)
-    throw new Step(`metacontext underflow during )`);
-  const { elt: metaEntry, newState: state2 } = pr2;
+  let metaEntry;
+  ({ elt: metaEntry, newState: state } = popMeta(state));
 
   if (metaEntry.t != 'ctx')
     throw new Step(`expected ctx during >`);
 
   const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
 
-  return produce(state2, s => {
+  return produce(state, s => {
     s.cframe.program.last = pc;
     s.stack.push(newStackEntry);
   });
@@ -178,15 +173,16 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
     case '.': {
       if (state.cframe.defining) {
         state = doCloseParen(state, pc);
-        const popResult = popStack(state);
-        if (popResult == undefined)
-          throw new Step(`stack underflow during .`);
-        const { elt, newState } = popResult;
+
+        let elt;
+        ({ elt, newState: state } = popStack(state));
+
         if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
           throw new Step(`expected classifier on stack during .`);
         }
+
         const emptyProgram: Tok[] = [];
-        state = produce(newState, s => {
+        state = produce(state, s => {
           s.sig.push({
             name: state.cframe.name ?? '_',
             klass: elt.term,
@@ -199,25 +195,14 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         return state;
       }
       else {
-        let ms = state;
+        let cframe;
+        ({ elt: cframe, newState: state } = popCtl(state));
 
-        const popCtlResult = popCtl(ms);
-        if (popCtlResult == undefined)
-          throw new Step(`ctl underflow during :`);
-        const { elt: cframe, newState: state0 } = popCtlResult;
-        ms = state0;
+        let sframe;
+        ({ elt: sframe, newState: state } = popStack(state));
 
-        const popStackResult = popStack(ms);
-        if (popStackResult == undefined)
-          throw new Step(`ctl underflow during :`);
-        const { elt: sframe, newState: state1 } = popStackResult;
-        ms = state1;
-
-        const popMetaResult = popMeta(ms);
-        if (popMetaResult == undefined)
-          throw new Step(`ctl underflow during :`);
-        const { elt: mframe, newState: state2 } = popMetaResult;
-        ms = state2;
+        let mframe;
+        ({ elt: mframe, newState: state } = popMeta(state));
 
         const name = state.cframe.name;
         if (name == undefined) {
@@ -228,7 +213,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
           throw new Step(`expected sub during .`);
         }
 
-        return produce(ms, s => {
+        return produce(state, s => {
           s.cframe = cframe;
           s.stack.push(formRoot(name, mframe.sub, sframe));
         });
@@ -260,35 +245,32 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
 
     case '->': {
       if (state.cframe.defining) {
-        const popResult = popStack(state);
-        if (popResult == undefined)
-          throw new Step(`stack underflow during ->`);
-        const { elt, newState } = popResult;
+
         if (state.meta.length == 0)
           throw new Step(`metacontext underflow during ->`);
         const oldCtx = state.meta[state.meta.length - 1];
         if (oldCtx.t != 'ctx')
           throw new Step(`expected ctx during ->`);
+
+        let elt;
+        ({ elt, newState: state } = popStack(state));
+
+        // XXX state.cframe.name is slightly suspect here
         const newCtx = produce(oldCtx, c => {
           c.ctx.push({ name: state.cframe.name, klass: elt.term, range: { first: 0, last: 1 } });
         });
-        return produce(newState, s => {
+
+        return produce(state, s => {
           s.cframe.name = undefined;
           s.meta[state.meta.length - 1] = newCtx;
         });
       }
       else {
-        const popResult1 = popStack(state);
-        if (popResult1 == undefined)
-          throw new Step(`stack underflow (1) during ->`);
-        const { elt: elt1, newState: ns1 } = popResult1;
-        state = ns1;
+        let elt1;
+        ({ elt: elt1, newState: state } = popStack(state));
 
-        const popResult2 = popStack(state);
-        if (popResult2 == undefined)
-          throw new Step(`stack underflow (2) during ->`);
-        const { elt: elt2, newState: ns2 } = popResult2;
-        state = ns2;
+        let elt2;
+        ({ elt: elt2, newState: state } = popStack(state));
 
         if (!exprEqual(elt1.term, elt2.klass)) {
           throw new Step(`type mismatch`);
