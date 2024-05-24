@@ -236,7 +236,7 @@ export function showDupCurrentSelection(state: State, dispatch: Dispatch, curren
       const sigEntry = state.sig[currentSelection.index];
       return <div>
         {renderSigEntry(sigEntry)}<br />
-        <PcToken dispatch={dispatch} pc={sigEntry.program.first} selection={currentPcSelection} />
+        <PcToken dispatch={dispatch} pc={sigEntry.pc} selection={currentPcSelection} />
       </div>;
     }
   }

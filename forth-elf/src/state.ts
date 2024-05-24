@@ -119,7 +119,7 @@ function callIdent(state: State, name: string): State {
   }
   return produce(state, s => {
     s.ctl.push(state.cframe);
-    s.cframe.pc = sigent.program.first;
+    s.cframe.pc = sigent.pc;
     s.cframe.defining = false;
   });
 }
@@ -195,7 +195,7 @@ function doBind(state: State, pc: number): State {
       s.sig.push({
         name: elt.name ?? '_',
         klass: elt.term,
-        program: { first: elt.pc, last: -1 },
+        pc: elt.pc,
       });
     });
 

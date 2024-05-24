@@ -51,7 +51,7 @@ export type PosTok = { tok: Tok, range: Range };
 export type SigEntry = {
   name: string,
   klass: Expr,
-  program: Rng,
+  pc: number,
 };
 
 export type CtxEntry = {
