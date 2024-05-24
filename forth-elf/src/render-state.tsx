@@ -198,10 +198,10 @@ function PcToken(props: PcTokenProps): JSX.Element {
 function renderCtlEntry(ctl: CtlEntry, currentPcSelection: number | undefined, dispatch: Dispatch, index?: number): JSX.Element {
   let name: (JSX.Element | string)[] = [''];
   if (ctl.readingName) {
-    name = [`, name: `, <span style={{ color: 'red' }}>?</span>];
+    name = [`[name: `, <span style={{ color: 'red' }}>?</span>, `]`];
   }
   else if (ctl.name != undefined) {
-    name = [`, name: ${ctl.name}`];
+    name = [`[name: ${ctl.name}]`];
   }
 
   const onMouseDown = index == undefined ? undefined : () => {
@@ -210,7 +210,7 @@ function renderCtlEntry(ctl: CtlEntry, currentPcSelection: number | undefined, d
 
   return <span>
     <PcToken dispatch={dispatch} pc={ctl.pc} selection={currentPcSelection} />
-    [{name}]</span>;
+    {name}</span>;
 }
 
 function renderCtl(ctl: Ctl, currentPcSelection: number | undefined, dispatch: Dispatch): JSX.Element {
