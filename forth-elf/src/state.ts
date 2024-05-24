@@ -63,12 +63,12 @@ function popMeta(state: State): { elt: MetaCtxEntry, newState: State } {
   return { elt, newState };
 }
 
-function formPi(ctx: Ctx, base: StackEntry): StackEntry {
+function formPi(ctx: Ctx, base: StackEntry, name: string | undefined, pc: number): StackEntry {
   let term = base.term;
   for (let i = ctx.length - 1; i >= 0; i--) {
     term = { t: 'pi', name: ctx[i].name, a: ctx[i].klass, b: term };
   }
-  return { t: 'DataFrame', term, klass: base.klass };
+  return { t: 'LabDataFrame', term, klass: base.klass, name, pc };
 }
 
 function formRoot(name: string, sub: Sub, base: StackEntry): StackEntry {
@@ -157,7 +157,7 @@ function doCloseParen(state: State, pc: number): State {
   if (metaEntry.t != 'ctx')
     throw new Step(`expected ctx during >`);
 
-  const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
+  const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry, state.cframe.name, metaEntry.pc);
 
   return produce(state, s => {
     s.cframe.program.last = pc;

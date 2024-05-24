@@ -82,7 +82,9 @@ export type CtlEntry = {
 
 
 export type StackEntry =
-  | { t: 'DataFrame', term: Expr, klass: Expr };
+  | { t: 'DataFrame', term: Expr, klass: Expr }
+  | { t: 'LabDataFrame', name: string | undefined, pc: number, term: Expr, klass: Expr }
+  ;
 
 export type Sig = SigEntry[];
 export type Ctx = CtxEntry[];

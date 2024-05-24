@@ -1,5 +1,5 @@
 import { tokenToString } from "typescript";
-import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, SigEntry, Stack, State, SubEntry, Tok } from "./state-types";
+import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, SigEntry, Stack, StackEntry, State, SubEntry, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 import Tex from './katex';
 import { CSSProperties } from "react";
@@ -119,9 +119,14 @@ function renderSig(sig: Sig, dispatch: Dispatch, currentSelection: Selection | u
 function renderStack(stack: Stack): JSX.Element {
   const newline = "\n";
 
-  const str = stack.map(e => {
-    return <span><Tex expr={subToTex(e)} />{newline}</span>;
-  });
+  function renderStackFrame(e: StackEntry) {
+    switch (e.t) {
+      case 'DataFrame': return <span><Tex expr={subToTex(e)} />{newline}</span>;
+      case 'LabDataFrame': return <span><Tex expr={subToTex(e)} /> {e.name}
+        <PcToken onClick={() => { }} pc={e.pc} selected={false} />{newline}</span>;
+    }
+  }
+  const str = stack.map(e => renderStackFrame(e));
 
   return <pre>{str}</pre>;
 }
