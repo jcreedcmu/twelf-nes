@@ -133,7 +133,7 @@ function renderCtx(e: MetaCtxCtxEntry, full?: boolean) {
 function renderSub(e: MetaCtxSubEntry, full?: boolean) {
   const ctxItems: JSX.Element[] = [];
   for (const ci of e.sub) {
-    ctxItems.push(<span><div className="token"><Tex expr={texOfSubEntry(ci)} /></div><div className="token">{e.pc}</div></span>);
+    ctxItems.push(<span><div className="token"><Tex expr={texOfSubEntry(ci)} /></div><div className="token">.{ci.pc}</div></span>);
   }
   return ctxItems;
 }
@@ -155,7 +155,7 @@ function renderMetaFrame(e: MetaCtxEntry, dispatch: Dispatch, currentPcSelection
   const rb = '\\}';
   switch (e.t) {
     case 'sub': {
-      return <span>{renderSub(e, full)}</span>;
+      return <span>sub{renderSub(e, full)}</span>;
     }
     case 'ctx': {
       const onClick = () => {
@@ -163,7 +163,7 @@ function renderMetaFrame(e: MetaCtxEntry, dispatch: Dispatch, currentPcSelection
       }
       const selected = currentPcSelection == e.pc;
       const token = <PcToken dispatch={dispatch} selection={currentPcSelection} pc={e.pc} />;
-      return <span>{renderCtx(e, full)}{token}</span>;
+      return <span>ctx{renderCtx(e, full)}{token}</span>;
     }
   }
 }

@@ -194,6 +194,7 @@ function callIdent(state: State, name: string): State {
       });
     case 'subEntryPc':
       return produce(state, s => {
+        s.meta.push(sigma);
         s.ctl.push(state.cframe);
         s.cframe.pc = result.pc;
       });
@@ -232,26 +233,17 @@ function doCloseBracket(state: State): State {
     }
     case 'sub': {
 
-      throw new Step(`lambda execution not ready yet`);
+      let cframe;
+      ({ elt: cframe, newState: state } = popCtl(state));
 
-      // let cframe;
-      // ({ elt: cframe, newState: state } = popCtl(state));
+      // *Don't* pop stack? Just leave it where it is??
 
       // let sframe;
       // ({ elt: sframe, newState: state } = popStack(state));
 
-      // // XXX assert sframe is type/kind?
-
-      // const name = state.cframe.name;
-      // if (name == undefined) {
-      //   throw new Step(`expected constant to be named during closeParen`);
-      // }
-
-      // return produce(state, s => {
-      //   s.cframe.name = undefined;
-      //   s.cframe = cframe;
-      //   s.stack.push(formRoot(name, metaEntry.sub, sframe));
-      // });
+      return produce(state, s => {
+        s.cframe = cframe;
+      });
     }
   }
 }
@@ -371,12 +363,16 @@ function doBind(state: State, pc: number): State {
         throw new Step(`type mismatch`);
       }
 
+      let pc = -1;
+      if (elt2.t == 'LabDataFrame') {
+        pc = elt2.pc;  // this has a chance of being right if elt2 was a lambda
+      }
       const sub = produce(oldCtx.sub, c => {
         c.push({
           term: elt2.term,
           name: elt1.name,
           klass: elt1.term,
-          pc: -1, // XXX this is wrong
+          pc,
         });
       });
       return produce(state, s => {
