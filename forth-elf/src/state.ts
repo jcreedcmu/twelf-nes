@@ -271,6 +271,8 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         case 'l': // fallthrough intentional
         case 's': // fallthrough intentional
         case 'b': // fallthrough intentional
+        case 'a': // fallthrough intentional
+        case 'm': // fallthrough intentional
         case 'k':
           return callIdent(state, inst.name);
 

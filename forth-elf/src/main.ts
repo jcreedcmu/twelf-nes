@@ -1,6 +1,6 @@
 import { init } from "./app";
 
-const input = `
+const simple_test = `
 ( type : o ) .
 ( o : k ) .
 ( o : l ) .
@@ -14,8 +14,21 @@ const input = `
 EOF
 `;
 
+const sub_test = `
+( type : o ) .
+( ( o ) -> type : a ) .
+( ( o : x )  -> x a : m ) .
+( ( o : x ) ->
+ ( ( x a ) -> o : y ) ->
+ ( x m y a : z ) -> type : w) .
+( o : k ) .
+( ( o : x ) -> ( x a ) -> o : h ) .
+( k m k h m k h k w : v ) .
+EOF
+`;
+
 function go() {
-  init({ input });
+  init({ input: sub_test });
 }
 
 go();
