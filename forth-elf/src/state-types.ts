@@ -64,7 +64,7 @@ export type SubEntry = {
   name: string | undefined,
   term: Expr,
   klass: Expr,
-  range: Rng,
+  pc: number,
 };
 
 

@@ -224,10 +224,10 @@ function doBind(state: State, pc: number): State {
       });
     }
     case 'sub': {
-      let elt1;
+      let elt1; // A : type
       ({ elt: elt1, newState: state } = popStack(state));
 
-      let elt2;
+      let elt2; // M : A
       ({ elt: elt2, newState: state } = popStack(state));
 
       if (!exprEqual(elt1.term, elt2.klass)) {
@@ -235,7 +235,10 @@ function doBind(state: State, pc: number): State {
       }
 
       const sub = produce(oldCtx.sub, c => {
-        c.push({ term: elt2.term, name: state.cframe.name, klass: elt1.term, range: { first: 0, last: 1 } });
+        c.push({
+          term: elt2.term, name: state.cframe.name, klass: elt1.term,
+          pc: -1, // XXX this is wrong
+        });
       });
       return produce(state, s => {
         s.cframe.name = undefined;
