@@ -138,20 +138,20 @@ function doOpenParen(state: State) {
 function doCloseParen(state: State, pc: number): State {
   const pr1 = popStack(state);
   if (pr1 == undefined)
-    return produce(state, s => { s.error = `stack underflow during )`; });
+    throw new Step(`stack underflow during )`);
   const { elt: stackEntry, newState: state1 } = pr1;
 
   if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind') {
-    return produce(state, s => { s.error = `expected classifier on stack during .`; });
+    throw new Step(`expected classifier on stack during .`);
   }
 
   const pr2 = popMeta(state1);
   if (pr2 == undefined)
-    return produce(state1, s => { s.error = `metacontext underflow during )`; });
+    throw new Step(`metacontext underflow during )`);
   const { elt: metaEntry, newState: state2 } = pr2;
 
   if (metaEntry.t != 'ctx')
-    return produce(state, s => { s.error = `expected ctx during >`; });
+    throw new Step(`expected ctx during >`);
 
   const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry);
 
@@ -178,15 +178,12 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
     case '.': {
       if (state.cframe.defining) {
         state = doCloseParen(state, pc);
-        if (state.error)
-          return state;
-
         const popResult = popStack(state);
         if (popResult == undefined)
-          return produce(state, s => { s.error = `stack underflow during .`; });
+          throw new Step(`stack underflow during .`);
         const { elt, newState } = popResult;
         if (elt.klass.t != 'type' && elt.klass.t != 'kind') {
-          return produce(state, s => { s.error = `expected classifier on stack during .`; });
+          throw new Step(`expected classifier on stack during .`);
         }
         const emptyProgram: Tok[] = [];
         state = produce(newState, s => {
@@ -257,9 +254,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
             });
           });
 
-        default: return produce(state, s => {
-          s.error = `unimplemented identifier ${inst.name}`;
-        });
+        default: throw new Step(`unimplemented identifier ${inst.name}`);
       }
     }
 
@@ -324,9 +319,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         s.cframe.readingName = true;
       });
     }
-    default: return produce(state, s => {
-      s.error = `unimplemented instruction ${inst.t}`;
-    });
+    default: throw new Step(`unimplemented instruction ${inst.t}`);
   }
 }
 
