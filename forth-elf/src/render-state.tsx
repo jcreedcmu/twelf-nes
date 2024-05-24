@@ -210,7 +210,7 @@ function renderCtlEntry(ctl: CtlEntry, currentPcSelection: number | undefined, d
 
   return <span>
     <PcToken dispatch={dispatch} pc={ctl.pc} selection={currentPcSelection} />
-    [def: {ctl.defining ? 'T' : 'F'}{name}]</span>;
+    [{name}]</span>;
 }
 
 function renderCtl(ctl: Ctl, currentPcSelection: number | undefined, dispatch: Dispatch): JSX.Element {

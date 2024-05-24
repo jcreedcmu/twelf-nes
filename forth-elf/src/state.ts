@@ -10,7 +10,6 @@ export function mkState(toks: Tok[][]): State {
   return {
     cframe: {
       pc: 0,
-      defining: true,
       readingName: false,
       name: undefined,
     },
@@ -188,7 +187,6 @@ function callIdent(state: State, name: string): State {
       return produce(state, s => {
         s.ctl.push(state.cframe);
         s.cframe.pc = result.se.pc;
-        s.cframe.defining = false;
       });
     case 'subEntryTerm':
       return produce(state, s => {

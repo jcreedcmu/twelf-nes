@@ -79,7 +79,6 @@ export type MetaCtxEntry =
 
 export type CtlEntry = {
   pc: number
-  defining: boolean,
   name: string | undefined,
   readingName: boolean,
 };
