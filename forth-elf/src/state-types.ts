@@ -10,6 +10,7 @@ export type Action =
 export type Selection =
   | { t: 'sigItem', index: number }
   | { t: 'ctlItem', index: number }
+  | { t: 'metaItem', index: number }
   ;
 
 export type AppState = {

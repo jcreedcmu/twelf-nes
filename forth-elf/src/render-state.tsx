@@ -59,6 +59,10 @@ function isTokenHilighted(state: State, sel: Selection, pc: number): boolean {
   switch (sel.t) {
     case 'sigItem': return in_range(pc, state.sig[sel.index].program);
     case 'ctlItem': return state.ctl[sel.index].pc == pc;
+    case 'metaItem': {
+      const frame = state.meta[sel.index];
+      return frame.t == 'ctx' && frame.pc == pc;
+    }
   }
 }
 
@@ -137,23 +141,43 @@ function texOfCtx(meta: MetaCtxEntry): string {
   }
 }
 
-function renderMeta(meta: MetaCtx): JSX.Element {
+function renderMeta(meta: MetaCtx, currentSelection: Selection | undefined, dispatch: Dispatch): JSX.Element {
   const newline = "\n";
 
-  function renderMetaFrame(e: MetaCtxEntry): JSX.Element {
+  function renderMetaFrame(e: MetaCtxEntry, index: number): JSX.Element {
     const lb = '\\{';
     const rb = '\\}';
     switch (e.t) {
       case 'sub': return <span><Tex expr={lb + texOfCtx(e) + rb} />{newline}</span>;
-      case 'ctx': return <span><Tex expr={'(' + texOfCtx(e) + ')'} /><div className="token">{e.pc}</div>{newline}</span>;
+      case 'ctx': {
+        const onClick = () => {
+          dispatch({ t: 'setCurrentSel', sel: { t: 'metaItem', index } });
+        }
+        const selected = currentSelection != undefined && currentSelection.t == 'metaItem' && currentSelection.index == index;
+        const token = <PcToken onClick={onClick} selected={selected} pc={e.pc} />;
+        return <span><Tex expr={'(' + texOfCtx(e) + ')'} />{token}{newline}</span>;
+      }
     }
 
   }
 
-  const str = meta.map(e => renderMetaFrame(e));
+  const str = meta.map((e, i) => renderMetaFrame(e, i));
 
 
   return <pre>{str}</pre>;
+}
+
+type PcTokenProps = {
+  onClick: () => void,
+  selected: boolean,
+  pc: number,
+}
+
+function PcToken(props: PcTokenProps): JSX.Element {
+  const className: string[] = ["token"];
+  if (props.selected)
+    className.push('hilited');
+  return <div className={className.join(' ')} onMouseDown={e => props.onClick()} >{props.pc}</div>;
 }
 
 function renderCtlEntry(ctl: CtlEntry, currentSelection: Selection | undefined, dispatch: Dispatch, index?: number): JSX.Element {
@@ -240,7 +264,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
           <b>Stack</b>:{renderStack(state.stack)}
         </div>,
         <div style={tdStyle}>
-          <b>Meta</b>:{renderMeta(state.meta)}<br />
+          <b>Meta</b>:{renderMeta(state.meta, currentSelection, dispatch)}<br />
         </div>,
       ];
 
