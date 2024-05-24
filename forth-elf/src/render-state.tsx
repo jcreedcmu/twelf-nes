@@ -78,7 +78,7 @@ function renderToks(state: State, dispatch: Dispatch, currentPcSelection: number
       row.push(elt);
       i++;
     }
-    row.push(<br />);
+    row.push(<hr style={{ height: 1, border: 'none', backgroundColor: 'black' }} />);
   }
   return <div>{row}</div>;
 }
@@ -150,28 +150,29 @@ function MetaButton(props: MetaButtonProps): JSX.Element {
   }}>?</button>;
 }
 
-function renderMetaFrame(e: MetaCtxEntry, dispatch: Dispatch, currentPcSelection: number | undefined, index: number): JSX.Element {
-  const newline = "\n";
+function renderMetaFrame(e: MetaCtxEntry, dispatch: Dispatch, currentPcSelection: number | undefined): JSX.Element {
   const lb = '\\{';
   const rb = '\\}';
   switch (e.t) {
-    case 'sub': return <span><MetaButton dispatch={dispatch} index={index} />
-      <Tex expr={lb + texOfCtx(e) + rb} />{newline}</span>;
+    case 'sub': return <Tex expr={lb + texOfCtx(e) + rb} />;
     case 'ctx': {
       const onClick = () => {
         dispatch({ t: 'setCurrentPcSel', pc: e.pc });
       }
-      const selected = currentPcSelection == index;
+      const selected = currentPcSelection == e.pc;
       const token = <PcToken dispatch={dispatch} selection={currentPcSelection} pc={e.pc} />;
-      return <span>
-        <MetaButton dispatch={dispatch} index={index} />
-        <Tex expr={'(' + texOfCtx(e) + ')'} />{token}{newline}</span>;
+      return <span><Tex expr={'(' + texOfCtx(e) + ')'} />{token}</span>;
     }
   }
 }
 
 function renderMeta(meta: MetaCtx, currentPcSelection: number | undefined, dispatch: Dispatch): JSX.Element {
-  const str = meta.map((e, i) => renderMetaFrame(e, dispatch, currentPcSelection, i));
+  const newline = "\n";
+  const str = meta.map((e, i) => <span>
+    <MetaButton dispatch={dispatch} index={i} />
+    {renderMetaFrame(e, dispatch, currentPcSelection)}
+    {newline}
+  </span>);
   return <pre>{str}</pre>;
 }
 
@@ -253,7 +254,7 @@ export function showDupCurrentSelection(state: State, dispatch: Dispatch, curren
     case 'metaItem': {
       const metaEntry = state.meta[currentSelection.index];
       return <div>
-        {renderMetaFrame(metaEntry, dispatch, currentPcSelection, currentSelection.index)}<br />
+        {renderMetaFrame(metaEntry, dispatch, currentPcSelection)}<br />
       </div>;
 
     }
