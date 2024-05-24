@@ -102,25 +102,43 @@ function errorState(state: State, msg: string): State {
   return produce(state, s => { s.error = msg; });
 }
 
-function findIdent(state: State, name: string): SigEntry {
+type FindIdentResult =
+  | { t: 'sigEntry', se: SigEntry }
+  | { t: 'subConst', klass: Expr, term: Expr }
+  ;
+
+function findIdent(state: State, name: string): FindIdentResult {
   // XXX wrong direction?
   const sigent = state.sig.find(se => se.name == name);
 
   if (sigent != undefined) {
-    return sigent;
+    return { t: 'sigEntry', se: sigent };
   }
 
   for (let i = state.meta.length - 1; i >= 0; i--) {
     const frame = state.meta[i];
-    // XXX should search sub?
+    if (frame.t == 'sub') {
+      // XXX wrong direction?
+      const found = frame.sub.findIndex(e => e.name == name)
+      if (found != -1) {
+        return {
+          t: 'subConst',
+          klass: frame.sub[found].klass,
+          term: frame.sub[found].term, // This is wrong, it should be more like a pc, but
+          // pc: frame.sub[found].pc, // right now I don't know how to get a valid pc
+        }
+      }
+    }
     if (frame.t == 'ctx') {
       // XXX wrong direction?
       const found = frame.ctx.findIndex(e => e.name == name)
       if (found != -1) {
         return {
-          name,
-          klass: frame.ctx[found].klass,
-          pc: frame.ctx[found].pc,
+          t: 'sigEntry', se: {
+            name,
+            klass: frame.ctx[found].klass,
+            pc: frame.ctx[found].pc,
+          }
         }
       }
     }
@@ -136,17 +154,24 @@ function callIdent(state: State, name: string): State {
     sub: [],
   };
 
-  state = produce(state, s => {
-    s.meta.push(sigma);
-  });
-
   const result = findIdent(state, name);
 
-  return produce(state, s => {
-    s.ctl.push(state.cframe);
-    s.cframe.pc = result.pc;
-    s.cframe.defining = false;
-  });
+  switch (result.t) {
+    case 'sigEntry':
+      state = produce(state, s => {
+        s.meta.push(sigma);
+      });
+      // XXX all I use of sigentry is pc, apparently?
+      return produce(state, s => {
+        s.ctl.push(state.cframe);
+        s.cframe.pc = result.se.pc;
+        s.cframe.defining = false;
+      });
+    case 'subConst':
+      return produce(state, s => {
+        s.stack.push({ t: 'DataFrame', klass: result.klass, term: result.term })
+      });
+  }
 }
 
 function doOpenParen(state: State) {

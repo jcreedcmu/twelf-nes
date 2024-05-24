@@ -23,7 +23,7 @@ const sub_test = `
  ( x m y a : z ) -> type : w ) .
 ( o : k ) .
 ( ( o : x ) -> ( x a ) -> o : h ) .
-( k m k h m k h k w : v ) .
+( k m k h m [ ( k a : xx ) -> xx k h ]  k w : v ) .
 EOF
 `.replace(/\\\n/g, '');
 

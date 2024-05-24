@@ -1,3 +1,7 @@
+body {
+  background-color: #aaa;
+}
+
 .token {
   border: 1px solid #ccc;
   border-radius: 8px;
