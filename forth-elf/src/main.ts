@@ -38,8 +38,31 @@ const beta_test = `
 ( k2 k2 k b b m k [ ( o : t ) -> k2 t b ] c : d ) .
 EOF
 `
+
+const capture_test_fail = `
+( type : o ) .
+( type : p ) .
+( ( p ) -> o : a ) .
+( ( ( o ) -> o ) -> type : d ) .
+( ( o ) -> ( o ) -> o : b ) .
+( ( o : y ) -> ( [ ( o : x ) -> x y b ] d ) -> type : c ) .
+( ( ( o ) -> o : f ) -> [ ( o : y ) -> y f ] d : q ) .
+( ( p : x ) -> [ ( o : y ) -> y x a b ] q x a c : r ) .
+`; // this fails because we actually create a bad term via variable capture
+
+const noncapture_test_fail = `
+( type : o ) .
+( type : p ) .
+( ( p ) -> o : a ) .
+( ( ( o ) -> o ) -> type : d ) .
+( ( o ) -> ( o ) -> o : b ) .
+( ( o : y ) -> ( [ ( o : x ) -> x y b ] d ) -> type : c ) .
+( ( ( o ) -> o : f ) -> [ ( o : y ) -> y f ] d : q ) .
+( ( p : x1 ) -> [ ( o : y ) -> y x1 a b ] q x1 a c : r ) .
+`; // this fails because although we don't capture, we don't handle alpha-equivalence correctly
+
 function go() {
-  init({ input: beta_test });
+  init({ input: noncapture_test_fail });
 }
 
 go();
