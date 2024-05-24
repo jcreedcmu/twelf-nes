@@ -69,7 +69,7 @@ export type SubEntry = {
   pc: number,
 };
 
-export type MetaCtxSubEntry = { t: 'sub', sub: Sub };
+export type MetaCtxSubEntry = { t: 'sub', pc: number, sub: Sub };
 export type MetaCtxCtxEntry = { t: 'ctx', pc: number, ctx: Ctx };
 
 export type MetaCtxEntry =

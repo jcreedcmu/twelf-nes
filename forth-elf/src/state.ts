@@ -116,7 +116,8 @@ function errorState(state: State, msg: string): State {
 
 type FindIdentResult =
   | { t: 'sigEntry', se: SigEntry }
-  | { t: 'subConst', klass: Expr, term: Expr }
+  | { t: 'subEntryTerm', klass: Expr, term: Expr }
+  | { t: 'subEntryPc', klass: Expr, pc: number }
   ;
 
 function findIdent(state: State, name: string): FindIdentResult {
@@ -133,11 +134,20 @@ function findIdent(state: State, name: string): FindIdentResult {
       // XXX wrong direction?
       const found = frame.sub.findIndex(e => e.name == name)
       if (found != -1) {
-        return {
-          t: 'subConst',
-          klass: frame.sub[found].klass,
-          term: frame.sub[found].term, // This is wrong, it should be more like a pc, but
-          // pc: frame.sub[found].pc, // right now I don't know how to get a valid pc
+        // XXX some very bad special casing on lambdas
+        if (frame.sub[found].term.t == 'lam') {
+          return {
+            t: 'subEntryPc',
+            klass: frame.sub[found].klass,
+            pc: frame.sub[found].pc, // I think I can trust this one to be not -1
+          };
+        }
+        else {
+          return {
+            t: 'subEntryTerm',
+            klass: frame.sub[found].klass,
+            term: frame.sub[found].term, // This is wrong, it should be more like a pc?
+          };
         }
       }
     }
@@ -163,6 +173,7 @@ function callIdent(state: State, name: string): State {
 
   const sigma: MetaCtxEntry = {
     t: 'sub',
+    pc: state.cframe.pc,
     sub: [],
   };
 
@@ -179,9 +190,14 @@ function callIdent(state: State, name: string): State {
         s.cframe.pc = result.se.pc;
         s.cframe.defining = false;
       });
-    case 'subConst':
+    case 'subEntryTerm':
       return produce(state, s => {
         s.stack.push({ t: 'DataFrame', klass: result.klass, term: result.term })
+      });
+    case 'subEntryPc':
+      return produce(state, s => {
+        s.ctl.push(state.cframe);
+        s.cframe.pc = result.pc;
       });
   }
 }
@@ -367,7 +383,7 @@ function doBind(state: State, pc: number): State {
       });
       return produce(state, s => {
         s.cframe.name = undefined;
-        s.meta[state.meta.length - 1] = { t: 'sub', sub };
+        s.meta[state.meta.length - 1] = { t: 'sub', pc: elt1.pc, sub };
       });
     }
   }

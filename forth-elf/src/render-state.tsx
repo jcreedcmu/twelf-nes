@@ -1,5 +1,5 @@
 import { tokenToString } from "typescript";
-import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxCtxEntry, MetaCtxEntry, Selection, Sig, SigEntry, Stack, StackEntry, State, SubEntry, Tok } from "./state-types";
+import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxCtxEntry, MetaCtxEntry, MetaCtxSubEntry, Selection, Sig, SigEntry, Stack, StackEntry, State, SubEntry, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 import Tex from './katex';
 import { CSSProperties } from "react";
@@ -117,7 +117,7 @@ function texOfCtxEntry(e: CtxEntry): string {
 
 function texOfCtx(meta: MetaCtxEntry): string {
   switch (meta.t) {
-    case 'sub': return meta.sub.map(texOfSubEntry).join(', ');
+    case 'sub': return meta.sub.map(e => texOfSubEntry(e)).join(', ');
     case 'ctx': return meta.ctx.map(texOfCtxEntry).join(', ');
   }
 }
@@ -126,6 +126,14 @@ function renderCtx(e: MetaCtxCtxEntry, full?: boolean) {
   const ctxItems: JSX.Element[] = [];
   for (const ci of e.ctx) {
     ctxItems.push(<div className="token"><Tex expr={texOfCtxEntry(ci)} /></div>);
+  }
+  return ctxItems;
+}
+
+function renderSub(e: MetaCtxSubEntry, full?: boolean) {
+  const ctxItems: JSX.Element[] = [];
+  for (const ci of e.sub) {
+    ctxItems.push(<span><div className="token"><Tex expr={texOfSubEntry(ci)} /></div><div className="token">{e.pc}</div></span>);
   }
   return ctxItems;
 }
@@ -146,7 +154,9 @@ function renderMetaFrame(e: MetaCtxEntry, dispatch: Dispatch, currentPcSelection
   const lb = '\\{';
   const rb = '\\}';
   switch (e.t) {
-    case 'sub': return <Tex expr={lb + texOfCtx(e) + rb} />;
+    case 'sub': {
+      return <span>{renderSub(e, full)}</span>;
+    }
     case 'ctx': {
       const onClick = () => {
         dispatch({ t: 'setCurrentPcSel', pc: e.pc });
