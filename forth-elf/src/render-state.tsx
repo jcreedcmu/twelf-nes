@@ -1,5 +1,5 @@
 import { tokenToString } from "typescript";
-import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxEntry, Selection, Sig, SigEntry, Stack, StackEntry, State, SubEntry, Tok } from "./state-types";
+import { Action, Ctl, CtlEntry, CtxEntry, Expr, MetaCtx, MetaCtxCtxEntry, MetaCtxEntry, Selection, Sig, SigEntry, Stack, StackEntry, State, SubEntry, Tok } from "./state-types";
 import { Dispatch } from "./state-types";
 import Tex from './katex';
 import { CSSProperties } from "react";
@@ -138,6 +138,14 @@ function texOfCtx(meta: MetaCtxEntry): string {
   }
 }
 
+function renderCtx(e: MetaCtxCtxEntry, full?: boolean) {
+  const ctxItems: JSX.Element[] = [];
+  for (const ci of e.ctx) {
+    ctxItems.push(<div className="token"><Tex expr={texOfCtxEntry(ci)} /></div>);
+  }
+  return ctxItems;
+}
+
 type MetaButtonProps = {
   dispatch: Dispatch;
   index: number;
@@ -150,7 +158,7 @@ function MetaButton(props: MetaButtonProps): JSX.Element {
   }}>?</button>;
 }
 
-function renderMetaFrame(e: MetaCtxEntry, dispatch: Dispatch, currentPcSelection: number | undefined): JSX.Element {
+function renderMetaFrame(e: MetaCtxEntry, dispatch: Dispatch, currentPcSelection: number | undefined, full?: boolean): JSX.Element {
   const lb = '\\{';
   const rb = '\\}';
   switch (e.t) {
@@ -161,7 +169,7 @@ function renderMetaFrame(e: MetaCtxEntry, dispatch: Dispatch, currentPcSelection
       }
       const selected = currentPcSelection == e.pc;
       const token = <PcToken dispatch={dispatch} selection={currentPcSelection} pc={e.pc} />;
-      return <span><Tex expr={'(' + texOfCtx(e) + ')'} />{token}</span>;
+      return <span>{renderCtx(e, full)}{token}</span>;
     }
   }
 }
@@ -254,7 +262,7 @@ export function showDupCurrentSelection(state: State, dispatch: Dispatch, curren
     case 'metaItem': {
       const metaEntry = state.meta[currentSelection.index];
       return <div>
-        {renderMetaFrame(metaEntry, dispatch, currentPcSelection)}<br />
+        {renderMetaFrame(metaEntry, dispatch, currentPcSelection, true)}<br />
       </div>;
 
     }
