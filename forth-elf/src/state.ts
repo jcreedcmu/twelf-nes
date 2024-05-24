@@ -17,14 +17,7 @@ export function mkState(toks: Tok[][]): State {
     },
     ctl: [],
     ctx: [],
-    meta: [{
-      t: 'ctx',
-      ctx: [],
-
-      // XXX this context is a stub that stands in for the signature, which is why pc is a dummy value for now.
-      // should eventually delete it and merge the implementation of . with →, I guess?
-      pc: -1,
-    }],
+    meta: [],
     sig: [],
     stack: [],
     toks: toks.flatMap(x => x),
@@ -186,6 +179,77 @@ function doCloseParen(state: State, pc: number): State {
   }
 }
 
+function doBind(state: State, pc: number): State {
+
+  if (state.meta.length == 0) { // signature
+    let elt;
+    ({ elt, newState: state } = popStack(state));
+
+    if (elt.t != 'LabDataFrame')
+      throw new Step(`expected labelled data frame on stack during .`);
+
+    if (elt.klass.t != 'type' && elt.klass.t != 'kind')
+      throw new Step(`expected classifier on stack during .`);
+
+    const emptyProgram: Tok[] = [];
+    state = produce(state, s => {
+      s.sig.push({
+        name: elt.name ?? '_',
+        klass: elt.term,
+        program: { first: elt.pc, last: -1 },
+      });
+      s.cframe.program = { first: pc + 1, last: pc };
+      s.cframe.name = undefined; // XXX this belongs in closeParen
+    });
+
+    return state;
+  }
+
+  const oldCtx = state.meta[state.meta.length - 1];
+  switch (oldCtx.t) {
+    case 'ctx': {
+      let elt;
+      ({ elt, newState: state } = popStack(state));
+
+      if (elt.t != 'LabDataFrame')
+        throw new Step(`expected labelled data frame on stack during .`);
+
+      // XXX state.cframe.name is slightly suspect here
+      const newCtx = produce(oldCtx, c => {
+        c.ctx.push({
+          name: elt.name,
+          klass: elt.term,
+          range: { first: elt.pc, last: -1 }
+        });
+      });
+
+      return produce(state, s => {
+        s.cframe.name = undefined; // XXX this belongs in closeParen
+        s.meta[state.meta.length - 1] = newCtx;
+      });
+    }
+    case 'sub': {
+      let elt1;
+      ({ elt: elt1, newState: state } = popStack(state));
+
+      let elt2;
+      ({ elt: elt2, newState: state } = popStack(state));
+
+      if (!exprEqual(elt1.term, elt2.klass)) {
+        throw new Step(`type mismatch`);
+      }
+
+      const sub = produce(oldCtx.sub, c => {
+        c.push({ term: elt2.term, name: state.cframe.name, klass: elt1.term, range: { first: 0, last: 1 } });
+      });
+      return produce(state, s => {
+        s.cframe.name = undefined;
+        s.meta[state.meta.length - 1] = { t: 'sub', sub };
+      });
+    }
+  }
+}
+
 function execInstruction(state: State, inst: Tok, pc: number): State {
   if (state.cframe.readingName) {
     return produce(state, s => {
@@ -200,29 +264,9 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       s.stack.push({ t: 'DataFrame', term: { t: 'type' }, klass: { t: 'kind' } });
     });
 
-    case '.': {
-      let elt;
-      ({ elt, newState: state } = popStack(state));
-
-      if (elt.t != 'LabDataFrame')
-        throw new Step(`expected labelled data frame on stack during .`);
-
-      if (elt.klass.t != 'type' && elt.klass.t != 'kind')
-        throw new Step(`expected classifier on stack during .`);
-
-      const emptyProgram: Tok[] = [];
-      state = produce(state, s => {
-        s.sig.push({
-          name: elt.name ?? '_',
-          klass: elt.term,
-          program: { first: elt.pc, last: -1 },
-        });
-        s.cframe.program = { first: pc + 1, last: pc };
-        s.cframe.name = undefined;
-      });
-
-      return state;
-    }
+    // These are now the same
+    case '.': return doBind(state, pc);
+    case '->': return doBind(state, pc);
 
     case 'id': {
       switch (inst.name) {
@@ -248,55 +292,7 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       }
     }
 
-    case '->': {
-      if (state.cframe.defining) {
 
-        if (state.meta.length == 0)
-          throw new Step(`metacontext underflow during ->`);
-        const oldCtx = state.meta[state.meta.length - 1];
-        if (oldCtx.t != 'ctx')
-          throw new Step(`expected ctx during ->`);
-
-        let elt;
-        ({ elt, newState: state } = popStack(state));
-
-        // XXX state.cframe.name is slightly suspect here
-        const newCtx = produce(oldCtx, c => {
-          c.ctx.push({ name: state.cframe.name, klass: elt.term, range: { first: 0, last: 1 } });
-        });
-
-        return produce(state, s => {
-          s.cframe.name = undefined;
-          s.meta[state.meta.length - 1] = newCtx;
-        });
-      }
-      else {
-        let elt1;
-        ({ elt: elt1, newState: state } = popStack(state));
-
-        let elt2;
-        ({ elt: elt2, newState: state } = popStack(state));
-
-        if (!exprEqual(elt1.term, elt2.klass)) {
-          throw new Step(`type mismatch`);
-        }
-
-        if (state.meta.length == 0)
-          throw new Step(`metacontext underflow during ->`);
-
-        const oldSub = state.meta[state.meta.length - 1];
-        if (oldSub.t != 'sub')
-          throw new Step(`expected sub during ->`);
-
-        const newSub = produce(oldSub, c => {
-          c.sub.push({ term: elt2.term, name: state.cframe.name, klass: elt1.term, range: { first: 0, last: 1 } });
-        });
-        return produce(state, s => {
-          s.cframe.name = undefined;
-          s.meta[state.meta.length - 1] = newSub;
-        });
-      }
-    }
 
     case '(': return doOpenParen(state);
     case ')': return doCloseParen(state, pc);
