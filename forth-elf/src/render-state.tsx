@@ -140,9 +140,18 @@ function texOfCtx(meta: MetaCtxEntry): string {
 function renderMeta(meta: MetaCtx): JSX.Element {
   const newline = "\n";
 
-  const str = meta.map(e => {
-    return <span><Tex expr={e.t + '(' + texOfCtx(e) + ')'} />{newline}</span>;
-  });
+  function renderMetaFrame(e: MetaCtxEntry): JSX.Element {
+    const lb = '\\{';
+    const rb = '\\}';
+    switch (e.t) {
+      case 'sub': return <span><Tex expr={lb + texOfCtx(e) + rb} />{newline}</span>;
+      case 'ctx': return <span><Tex expr={'(' + texOfCtx(e) + ')'} /><div className="token">{e.pc}</div>{newline}</span>;
+    }
+
+  }
+
+  const str = meta.map(e => renderMetaFrame(e));
+
 
   return <pre>{str}</pre>;
 }

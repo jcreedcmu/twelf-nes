@@ -17,7 +17,14 @@ export function mkState(toks: Tok[][]): State {
     },
     ctl: [],
     ctx: [],
-    meta: [{ t: 'ctx', ctx: [] }],
+    meta: [{
+      t: 'ctx',
+      ctx: [],
+
+      // XXX this context is a stub that stands in for the signature, which is why pc is a dummy value for now.
+      // should eventually delete it and merge the implementation of . with →, I guess?
+      pc: -1,
+    }],
     sig: [],
     stack: [],
     toks: toks.flatMap(x => x),
@@ -128,6 +135,7 @@ function doOpenParen(state: State) {
   const gamma: MetaCtxEntry = {
     t: 'ctx',
     ctx: [],
+    pc: state.cframe.pc,
   };
 
   return produce(state, s => {
