@@ -149,10 +149,10 @@ function doCloseParen(state: State, pc: number): State {
       if (stackEntry.klass.t != 'type' && stackEntry.klass.t != 'kind')
         throw new Step(`expected classifier on stack during .`);
 
-
       const newStackEntry: StackEntry = formPi(metaEntry.ctx, stackEntry, state.cframe.name, metaEntry.pc);
 
       return produce(state, s => {
+        s.cframe.name = undefined;
         s.cframe.program.last = pc;
         s.stack.push(newStackEntry);
       });
@@ -172,6 +172,7 @@ function doCloseParen(state: State, pc: number): State {
       }
 
       return produce(state, s => {
+        s.cframe.name = undefined;
         s.cframe = cframe;
         s.stack.push(formRoot(name, metaEntry.sub, sframe));
       });
@@ -301,6 +302,9 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
       return produce(state, s => {
         s.cframe.readingName = true;
       });
+    }
+    case 'EOF': {
+      throw new Step(`halt`);
     }
     default: throw new Step(`unimplemented instruction ${inst.t}`);
   }

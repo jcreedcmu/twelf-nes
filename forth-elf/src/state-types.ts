@@ -34,6 +34,7 @@ export type Expr =
 
 
 export type Tok =
+  | { t: 'EOF' }
   | { t: 'type' }
   | { t: '->' }
   | { t: ':' }

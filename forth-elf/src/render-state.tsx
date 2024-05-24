@@ -16,6 +16,7 @@ export function stringOfTok(tok: Tok): string {
     case ')': return ')';
     case '[': return '[';
     case ']': return ']';
+    case 'EOF': return 'EOF';
   }
 }
 
