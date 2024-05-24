@@ -1,5 +1,5 @@
 import { produce } from 'immer';
-import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks } from './state-types';
+import { Sub, CtlEntry, Ctx, Expr, MetaCtxEntry, StackEntry, State, Tok, Toks, SigEntry } from './state-types';
 import { Rng } from "./range";
 import { tokenToString } from 'typescript';
 import { stringOfTok } from './render-state';
@@ -102,6 +102,33 @@ function errorState(state: State, msg: string): State {
   return produce(state, s => { s.error = msg; });
 }
 
+function findIdent(state: State, name: string): SigEntry {
+  // XXX wrong direction?
+  const sigent = state.sig.find(se => se.name == name);
+
+  if (sigent != undefined) {
+    return sigent;
+  }
+
+  for (let i = state.meta.length - 1; i >= 0; i--) {
+    const frame = state.meta[i];
+    // XXX should search sub?
+    if (frame.t == 'ctx') {
+      // XXX wrong direction?
+      const found = frame.ctx.findIndex(e => e.name == name)
+      if (found != -1) {
+        return {
+          name,
+          klass: frame.ctx[found].klass,
+          pc: frame.ctx[found].pc,
+        }
+      }
+    }
+  }
+
+  throw new Step(`couldn't find ${name}`);
+}
+
 function callIdent(state: State, name: string): State {
 
   const sigma: MetaCtxEntry = {
@@ -113,13 +140,11 @@ function callIdent(state: State, name: string): State {
     s.meta.push(sigma);
   });
 
-  const sigent = state.sig.find(se => se.name == name);
-  if (sigent == undefined) {
-    throw new Step(`couldn't find ${name}`);
-  }
+  const result = findIdent(state, name);
+
   return produce(state, s => {
     s.ctl.push(state.cframe);
-    s.cframe.pc = sigent.pc;
+    s.cframe.pc = result.pc;
     s.cframe.defining = false;
   });
 }
@@ -273,10 +298,10 @@ function execInstruction(state: State, inst: Tok, pc: number): State {
         case 'b': // fallthrough intentional
         case 'a': // fallthrough intentional
         case 'm': // fallthrough intentional
+        case 'x': // fallthrough intentional
         case 'k':
           return callIdent(state, inst.name);
 
-        case 'x': // fallthrough intentional
         case 'y':
           return produce(state, s => {
             s.stack.push({
