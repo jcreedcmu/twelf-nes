@@ -200,7 +200,6 @@ function doBind(state: State, pc: number): State {
         program: { first: elt.pc, last: -1 },
       });
       s.cframe.program = { first: pc + 1, last: pc };
-      s.cframe.name = undefined; // XXX this belongs in closeParen
     });
 
     return state;
@@ -215,7 +214,6 @@ function doBind(state: State, pc: number): State {
       if (elt.t != 'LabDataFrame')
         throw new Step(`expected labelled data frame on stack during .`);
 
-      // XXX state.cframe.name is slightly suspect here
       const newCtx = produce(oldCtx, c => {
         c.ctx.push({
           name: elt.name,
@@ -225,7 +223,6 @@ function doBind(state: State, pc: number): State {
       });
 
       return produce(state, s => {
-        s.cframe.name = undefined; // XXX this belongs in closeParen
         s.meta[state.meta.length - 1] = newCtx;
       });
     }
