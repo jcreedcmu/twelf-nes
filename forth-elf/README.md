@@ -136,3 +136,10 @@ and `]` effects the λR rule.
   a : x [ b : y [ y x k ] ]
 ```
 would be λ(x:a)λ(y:b).k x y.
+
+Ubiquitous Lambdas?
+-------------------
+
+Starting to think that aggressively square-bracketing every spine
+might have some value in providing return addresses for re-excuting
+terms in fresher contexts or substitution environments?
