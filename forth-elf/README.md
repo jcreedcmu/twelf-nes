@@ -142,4 +142,7 @@ Ubiquitous Lambdas?
 
 Starting to think that aggressively square-bracketing every spine
 might have some value in providing return addresses for re-excuting
-terms in fresher contexts or substitution environments?
+terms in fresher contexts or substitution environments? Perhaps normal
+terms (i.e. spine arguments) aren't even executed immediately, but
+deferred until spine application happens, to enable bidirectional
+checking?
