@@ -271,6 +271,7 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
     flexBasis: 0,
     overflowX: 'hidden',
     borderRight: '1px solid black',
+    padding: '4px 8px',
   };
 
 
