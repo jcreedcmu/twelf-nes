@@ -62,7 +62,7 @@ function renderToks(state: State, dispatch: Dispatch, currentPcSelection: number
       row.push(elt);
       i++;
     }
-    row.push(<hr style={{ height: 1, border: 'none', backgroundColor: 'black' }} />);
+    row.push(<hr style={{ height: 1, border: 'none', backgroundColor: '#ccc' }} />);
   }
   return <div>{row}</div>;
 }

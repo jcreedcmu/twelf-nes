@@ -13,6 +13,8 @@ body {
 
 .token {
   border: 1px solid #ccc;
+  border-right: 2px solid #aaa;
+  border-bottom: 2px solid #aaa;
   border-radius: 8px;
   margin: 2px;
   padding: 4px 8px;
@@ -20,19 +22,6 @@ body {
   display: inline-block;
   cursor: pointer;
   user-select: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.token::after {
-  content: '';
-  position: absolute;
-  inset: -2px -2px -2px -2px;
-  border-radius: 8px;
-  background:
-    linear-gradient(95deg, transparent 75%, rgba(0,0,0,0.25) 100%),
-    linear-gradient(175deg, transparent 75%, rgba(0,0,0,0.25) 100%);
-  pointer-events: none;
 }
 
 .token:hover {
@@ -49,6 +38,8 @@ body {
 
 .sigbutton {
   border: 1px solid #ccc;
+  border-right: 2px solid #aaa;
+  border-bottom: 2px solid #aaa;
   border-radius: 8px;
   margin: 4px;
   padding: 4px 8px;
