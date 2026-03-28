@@ -254,29 +254,29 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
     padding: '4px 8px',
   };
   return <div>
-    <b>Control</b>: {renderCtlEntry(state.cframe, currentPcSelection, dispatch)}<br />
+    <b>Control</b>: {renderCtlEntry(state.cframe, currentPcSelection, dispatch)}
+    {state.error != undefined &&
+      <span style={state.error !== 'halt' ? { color: 'red' } : {}}>
+        {' '}{state.error === 'halt' ? '(halted)' : `(error: ${state.error})`}
+      </span>
+    }<br />
     <div style={gridStyle}>
       <div style={colStyle}>
         <b>Tokens</b>:
         {renderToks(state, dispatch, currentPcSelection)}
       </div>
-      {state.error != undefined
-        ? <div style={{ gridColumn: 'span 4', color: 'red', textAlign: 'center', padding: '4px 8px' }}>ERROR: {state.error}</div>
-        : <>
-          <div style={colStyle}>
-            <b>Ctl</b>:{renderCtl(state.ctl, currentPcSelection, dispatch)}
-          </div>
-          <div style={colStyle}>
-            <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
-          </div>
-          <div style={colStyle}>
-            <b>Stack</b>:{renderStack(state.stack, dispatch, currentPcSelection)}
-          </div>
-          <div style={{ ...colStyle, borderRight: 'none' }}>
-            <b>Meta</b>:{renderMeta(state.meta, currentPcSelection, dispatch)}
-          </div>
-        </>
-      }
+      <div style={colStyle}>
+        <b>Ctl</b>:{renderCtl(state.ctl, currentPcSelection, dispatch)}
+      </div>
+      <div style={colStyle}>
+        <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
+      </div>
+      <div style={colStyle}>
+        <b>Stack</b>:{renderStack(state.stack, dispatch, currentPcSelection)}
+      </div>
+      <div style={{ ...colStyle, borderRight: 'none' }}>
+        <b>Meta</b>:{renderMeta(state.meta, currentPcSelection, dispatch)}
+      </div>
     </div>
     <center>{dupCurrentSelection}</center>
   </div>;
