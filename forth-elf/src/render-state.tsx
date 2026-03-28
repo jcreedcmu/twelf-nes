@@ -210,7 +210,7 @@ function renderCtlEntry(ctl: CtlEntry, currentPcSelection: number | undefined, d
 
   return <span>
     <PcToken dispatch={dispatch} pc={ctl.pc} selection={currentPcSelection} />
-    {name}</span>;
+    <span style={{ fontFamily: 'monospace' }}>{name}</span></span>;
 }
 
 function renderCtl(ctl: Ctl, currentPcSelection: number | undefined, dispatch: Dispatch): JSX.Element {
@@ -254,30 +254,32 @@ export function renderState(state: State, dispatch: Dispatch, currentSelection: 
     padding: '4px 8px',
   };
   return <div>
-    <b>Control</b>: {renderCtlEntry(state.cframe, currentPcSelection, dispatch)}
-    {state.error != undefined &&
-      <span style={state.error !== 'halt' ? { color: 'red' } : {}}>
-        {' '}{state.error === 'halt' ? '(halted)' : `(error: ${state.error})`}
-      </span>
-    }<br />
-    <div style={gridStyle}>
-      <div style={colStyle}>
-        <b>Tokens</b>:
-        {renderToks(state, dispatch, currentPcSelection)}
-      </div>
-      <div style={colStyle}>
-        <b>Ctl</b>:{renderCtl(state.ctl, currentPcSelection, dispatch)}
-      </div>
-      <div style={colStyle}>
-        <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
-      </div>
-      <div style={colStyle}>
-        <b>Stack</b>:{renderStack(state.stack, dispatch, currentPcSelection)}
-      </div>
-      <div style={{ ...colStyle, borderRight: 'none' }}>
-        <b>Meta</b>:{renderMeta(state.meta, currentPcSelection, dispatch)}
+    <div className="panel">
+      <b>Control</b>: {renderCtlEntry(state.cframe, currentPcSelection, dispatch)}
+      {state.error != undefined &&
+        <span style={state.error !== 'halt' ? { color: 'red' } : {}}>
+          {' '}{state.error === 'halt' ? '(halted)' : `(error: ${state.error})`}
+        </span>
+      }
+      <div style={{ ...gridStyle, marginTop: 8 }}>
+        <div style={colStyle}>
+          <b>Tokens</b>:
+          {renderToks(state, dispatch, currentPcSelection)}
+        </div>
+        <div style={colStyle}>
+          <b>Ctl</b>:{renderCtl(state.ctl, currentPcSelection, dispatch)}
+        </div>
+        <div style={colStyle}>
+          <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
+        </div>
+        <div style={colStyle}>
+          <b>Stack</b>:{renderStack(state.stack, dispatch, currentPcSelection)}
+        </div>
+        <div style={{ ...colStyle, borderRight: 'none' }}>
+          <b>Meta</b>:{renderMeta(state.meta, currentPcSelection, dispatch)}
+        </div>
       </div>
     </div>
-    <center>{dupCurrentSelection}</center>
+    {dupCurrentSelection && <div className="panel" style={{ textAlign: 'center' }}>{dupCurrentSelection}</div>}
   </div>;
 }

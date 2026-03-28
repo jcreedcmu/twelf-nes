@@ -119,10 +119,12 @@ export function mkAppState(input: string): AppState {
 
 export function renderAppState(app: AppState, dispatch: Dispatch): JSX.Element {
   return <div>
-    <div style={{ margin: '8px 0' }}><b>time</b>: {app.frame}</div>
-    <input type="range"
-      min={0} max={app.states.length - 1} style={{ width: '100%', marginBottom: 8 }} value={app.frame}
-      onInput={(e: React.FormEvent<HTMLInputElement>) => { dispatch({ t: 'setStep', frame: parseInt((e.target as HTMLInputElement).value) }) }} />
+    <div className="panel">
+      <div style={{ marginBottom: 4 }}><b>time</b>: {app.frame}</div>
+      <input type="range"
+        min={0} max={app.states.length - 1} style={{ width: '100%' }} value={app.frame}
+        onInput={(e: React.FormEvent<HTMLInputElement>) => { dispatch({ t: 'setStep', frame: parseInt((e.target as HTMLInputElement).value) }) }} />
+    </div>
     {renderState(app.states[app.frame], dispatch, app.currentSelection, app.currentPcSelection)}
   </div>;
 }
@@ -164,19 +166,21 @@ function App(props: AppProps): JSX.Element {
   }
 
   return <div>
-    <h1>Forth ELF Test</h1>
-    <div style={{ marginBottom: 12 }}>
-      <label>Test: <select onChange={(e) => {
-        dispatch({ t: 'loadInput', input: props.tests[parseInt(e.target.value)].input });
-      }}>
-        {props.tests.map((test, i) => (
-          <option key={i} value={i}>{test.name}</option>
-        ))}
-      </select></label>
-    </div>
-    <div className="help-text">
-      Use left/right arrow keys to step forward and backward in time.
-      Shift-arrow keys to "step over" like a debugger.
+    <div className="panel">
+      <h1 style={{ margin: '0 0 8px' }}>Forth ELF Test</h1>
+      <div style={{ marginBottom: 8 }}>
+        <label>Test: <select onChange={(e) => {
+          dispatch({ t: 'loadInput', input: props.tests[parseInt(e.target.value)].input });
+        }}>
+          {props.tests.map((test, i) => (
+            <option key={i} value={i}>{test.name}</option>
+          ))}
+        </select></label>
+      </div>
+      <div className="help-text">
+        Use left/right arrow keys to step forward and backward in time.
+        Shift-arrow keys to "step over" like a debugger.
+      </div>
     </div>
     {renderAppState(state, dispatch)}
   </div>;
