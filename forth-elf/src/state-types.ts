@@ -6,6 +6,7 @@ export type Action =
   | { t: 'findPc', pc: number }
   | { t: 'setCurrentSel', sel: Selection }
   | { t: 'setCurrentPcSel', pc: number }
+  | { t: 'loadInput', input: string }
   ;
 
 export type Selection =

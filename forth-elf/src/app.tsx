@@ -7,9 +7,11 @@ import { produce } from 'immer';
 import { useEffect } from 'react';
 import { renderState } from './render-state';
 import { Action, AppState, Dispatch, Effect } from './state-types';
+import { TestCase } from './tests';
 
 type AppProps = {
-  input: string,
+  tests: TestCase[],
+  initialTest: number,
 };
 
 export function init(props: AppProps) {
@@ -99,6 +101,9 @@ function reduce_inner(state: AppState, action: Action): AppState {
         s.currentPcSelection = undefined;
       });
     }
+    case 'loadInput': {
+      return mkAppState(action.input);
+    }
   }
 }
 
@@ -122,7 +127,7 @@ export function renderAppState(app: AppState, dispatch: Dispatch): JSX.Element {
 }
 
 function App(props: AppProps): JSX.Element {
-  const [state, dispatch] = useEffectfulReducer<Action, AppState, Effect>(mkAppState(props.input), reduce, doEffect);
+  const [state, dispatch] = useEffectfulReducer<Action, AppState, Effect>(mkAppState(props.tests[props.initialTest].input), reduce, doEffect);
 
   const keydownListener = (e: KeyboardEvent) => {
     const multi = e.shiftKey;
@@ -157,5 +162,14 @@ function App(props: AppProps): JSX.Element {
     }
   }
 
-  return renderAppState(state, dispatch);
+  return <div>
+    <select onChange={(e) => {
+      dispatch({ t: 'loadInput', input: props.tests[parseInt(e.target.value)].input });
+    }}>
+      {props.tests.map((test, i) => (
+        <option key={i} value={i}>{test.name}</option>
+      ))}
+    </select>
+    {renderAppState(state, dispatch)}
+  </div>;
 }

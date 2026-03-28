@@ -1,8 +1,8 @@
 import { init } from "./app";
-import { noncapture_test_fail } from './tests';
+import { allTests } from './tests';
 
 function go() {
-  init({ input: noncapture_test_fail });
+  init({ tests: allTests, initialTest: 0 });
 }
 
 go();

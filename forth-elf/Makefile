@@ -12,5 +12,8 @@ count:
 watch:
 	node ./build.js watch
 
+test:
+	npm test
+
 check:
 	npx tsc -w

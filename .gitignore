@@ -4,3 +4,4 @@
 *.pdf
 forth-elf/public/bundle.js
 forth-elf/public/bundle.js.map
+forth-elf/test-bundle.js
