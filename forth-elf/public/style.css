@@ -20,6 +20,19 @@ body {
   display: inline-block;
   cursor: pointer;
   user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.token::after {
+  content: '';
+  position: absolute;
+  inset: -2px -2px -2px -2px;
+  border-radius: 8px;
+  background:
+    linear-gradient(95deg, transparent 75%, rgba(0,0,0,0.25) 100%),
+    linear-gradient(175deg, transparent 75%, rgba(0,0,0,0.25) 100%);
+  pointer-events: none;
 }
 
 .token:hover {
