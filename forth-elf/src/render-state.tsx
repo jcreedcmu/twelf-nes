@@ -219,27 +219,6 @@ function renderCtl(ctl: Ctl, currentPcSelection: number | undefined, dispatch: D
   return <div className="ctlcontainer">{str}</div>;
 }
 
-type Lerp = JSX.Element | JSX.Element[];
-function hsplit(x: Lerp, y: Lerp, frac?: number): JSX.Element {
-  frac = frac ?? 0.5;
-  const s: CSSProperties = {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  }
-  const s1: CSSProperties = {
-    flexShrink: 0,
-    flexGrow: frac,
-    flexBasis: 0,
-    borderRight: '1px solid black',
-  }
-  const s2: CSSProperties = {
-    flexShrink: 0,
-    flexGrow: 1 - frac,
-    flexBasis: 0,
-  }
-  return <div style={s}><div style={s1} >{x}</div><div style={s2} >{y}</div></div>;
-}
 
 export function showDupCurrentSelection(state: State, dispatch: Dispatch, currentSelection: Selection | undefined, currentPcSelection: number | undefined): JSX.Element | undefined {
   if (currentSelection == undefined)
@@ -264,53 +243,41 @@ export function showDupCurrentSelection(state: State, dispatch: Dispatch, curren
 }
 
 export function renderState(state: State, dispatch: Dispatch, currentSelection: Selection | undefined, currentPcSelection: number | undefined): JSX.Element {
-  let stateRepn: JSX.Element[];
-  const tdStyle: CSSProperties = {
-    flexGrow: 1,
-    flexShrink: 0,
-    flexBasis: 0,
+  const dupCurrentSelection = showDupCurrentSelection(state, dispatch, currentSelection, currentPcSelection);
+  const gridStyle: CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+  };
+  const colStyle: CSSProperties = {
     overflowX: 'hidden',
     borderRight: '1px solid black',
     padding: '4px 8px',
   };
-
-
-  if (state.error != undefined) {
-    stateRepn = [<td style={{ color: 'red' }}>ERROR: {state.error}</td>];
-  }
-  else {
-    stateRepn =
-      [
-        <div style={tdStyle}>
-          <b>Ctl</b>:{renderCtl(state.ctl, currentPcSelection, dispatch)}<br />
-        </div>,
-        <div style={tdStyle}>
-          <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
-        </div>,
-        <div style={tdStyle}>
-          <b>Stack</b>:{renderStack(state.stack, dispatch, currentPcSelection)}
-        </div>,
-        <div style={tdStyle}>
-          <b>Meta</b>:{renderMeta(state.meta, currentPcSelection, dispatch)}<br />
-        </div>,
-      ];
-
-    /* ${stringOfSig(state.sig)}
-     *       {white - fg} stack: {
-     * /} ${stringOfStack(state.stack)}
-     * { white - fg} meta: {
-     * /} ${stringOfMeta(state.meta)}
-     * `; */
-  }
-
-  const dupCurrentSelection = showDupCurrentSelection(state, dispatch, currentSelection, currentPcSelection);
   return <div>
     <b>Control</b>: {renderCtlEntry(state.cframe, currentPcSelection, dispatch)}<br />
-    {hsplit(
-      renderToks(state, dispatch, currentPcSelection),
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', height: '100%' }}> {stateRepn}</div>,
-      0.20
-    )}<br />
+    <div style={gridStyle}>
+      <div style={colStyle}>
+        <b>Tokens</b>:
+        {renderToks(state, dispatch, currentPcSelection)}
+      </div>
+      {state.error != undefined
+        ? <div style={{ gridColumn: 'span 4', color: 'red', textAlign: 'center', padding: '4px 8px' }}>ERROR: {state.error}</div>
+        : <>
+          <div style={colStyle}>
+            <b>Ctl</b>:{renderCtl(state.ctl, currentPcSelection, dispatch)}
+          </div>
+          <div style={colStyle}>
+            <b>Sig</b>:{renderSig(state.sig, dispatch, currentSelection)}
+          </div>
+          <div style={colStyle}>
+            <b>Stack</b>:{renderStack(state.stack, dispatch, currentPcSelection)}
+          </div>
+          <div style={{ ...colStyle, borderRight: 'none' }}>
+            <b>Meta</b>:{renderMeta(state.meta, currentPcSelection, dispatch)}
+          </div>
+        </>
+      }
+    </div>
     <center>{dupCurrentSelection}</center>
   </div>;
 }
